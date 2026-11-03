@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 👑 Marwar Events & Celebrations (Full-Stack Architecture)
 
-## Getting Started
+A full-stack, SEO-friendly event management platform with a dedicated Admin Panel (`/service/admin`), Express REST API backend, and Prisma ORM connected to MySQL (phpMyAdmin).
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🏗️ Project Architecture & Folder Structure
+
+```
+marwar_event/
+├── app/                                # Next.js 16 (App Router) SEO Frontend
+│   ├── (public pages)
+│   │   ├── page.tsx                    # SEO Homepage (Hero, Services, Venues, Inquiry Form)
+│   │   ├── layout.tsx                  # Root Layout with JSON-LD Schema & OpenGraph Meta
+│   │   ├── globals.css                 # Global Tailwind CSS Styles
+│   │   ├── robots.ts                   # Dynamic robots.txt (Allows bots, protects /service/admin)
+│   │   └── sitemap.ts                  # Dynamic sitemap.xml for Google indexing
+│   ├── services/
+│   │   ├── page.tsx                    # All Services catalog with filters
+│   │   ├── [slug]/page.tsx             # Dynamic SEO service detail pages (generateMetadata)
+│   │   └── admin/page.tsx              # Seamless redirect to /service/admin
+│   ├── service/
+│   │   └── admin/page.tsx              # 👑 Requested Admin Panel (/service/admin)
+│   └── contact/page.tsx                # Contact Concierge page with Schema address
+│
+├── components/                         # Modular UI Components
+│   ├── Navbar.tsx                      # Header with brand crown, nav links & admin shortcut
+│   ├── Footer.tsx                      # SEO footer with internal links & schema markup
+│   └── InquiryForm.tsx                 # Interactive event booking form (connects to Express API)
+│
+├── server/                             # 🚀 Express.js Backend API
+│   └── src/
+│       ├── index.ts                    # Express server entry point (Port 5001)
+│       ├── lib/
+│       │   ├── prisma.ts               # Prisma singleton client + fallback store
+│       │   └── seedData.ts             # Initial services & inquiries data
+│       └── routes/
+│           ├── services.ts             # GET, POST, PUT, DELETE services
+│           ├── inquiries.ts            # GET, POST, PUT status, DELETE inquiries
+│           ├── stats.ts                # GET dashboard overview metrics
+│           └── auth.ts                 # Admin authentication endpoint
+│
+├── prisma/                             # 🗄️ Prisma ORM
+│   └── schema.prisma                   # MySQL schema for phpMyAdmin (AdminUser, Service, Inquiry, SiteSetting)
+│
+├── .env                                # Live configuration (DATABASE_URL, PORT, etc.)
+├── .env.example                        # Template for phpMyAdmin MySQL credentials
+├── package.json                        # Unified package & scripts
+└── tsconfig.json                       # TypeScript configuration
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚡ Quick Start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-## Learn More
+### 2. Configure phpMyAdmin / MySQL Database
+1. Open **phpMyAdmin** (e.g. `http://localhost/phpmyadmin` via XAMPP, WAMP, MAMP, or Docker).
+2. Create a new database named: **`marwar_events`**.
+3. In your `.env` file, configure your MySQL credentials:
+   ```env
+   # Default XAMPP (user 'root', no password):
+   DATABASE_URL="mysql://root:@localhost:3306/marwar_events"
 
-To learn more about Next.js, take a look at the following resources:
+   # If your MySQL has a password:
+   DATABASE_URL="mysql://root:YOUR_PASSWORD@localhost:3306/marwar_events"
+   ```
+4. Push the schema to your phpMyAdmin database:
+   ```bash
+   npx prisma db push
+   ```
+   *(All tables: `AdminUser`, `Service`, `Inquiry`, and `SiteSetting` will be created automatically in phpMyAdmin).*
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Start Frontend & Backend Concurrently
+Run both Next.js and Express together:
+```bash
+npm run dev:all
+```
+Or start them individually:
+- **Express Backend**: `npm run server` (runs on `http://localhost:5001`)
+- **Next.js Frontend**: `npm run dev` (runs on `http://localhost:3000`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🛡️ Admin Panel (`/service/admin`)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Visit `http://localhost:3000/service/admin` to access:
+- **Dashboard Overview**: Summary analytics of all inquiries, conversion rates, and live DB status.
+- **Services Manager**: Add, edit, or delete event packages (Weddings, Corporate Galas, Desert Safaris, Decor, Entertainment).
+- **Inquiry & Bookings Manager**: View client requests, update statuses (`PENDING`, `CONTACTED`, `CONFIRMED`, `COMPLETED`), add internal staff notes, and open direct WhatsApp chats with clients.
+- **Database & phpMyAdmin Tab**: In-depth instructions and connection verification.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🔍 SEO Features Built-In
+
+1. **Structured Data (JSON-LD)**: Schema.org `EventPlanningService` and `LocalBusiness` tags in `app/layout.tsx`.
+2. **Dynamic Sitemap (`/sitemap.xml`)**: Generated by `app/sitemap.ts` for immediate search engine indexing.
+3. **Robots Configuration (`/robots.txt`)**: Allows search bots on public content while protecting `/service/admin` and `/api/`.
+4. **Dynamic Metadata**: Every service has dedicated `metaTitle`, `metaDesc`, OpenGraph tags, and Twitter Cards (`app/services/[slug]/page.tsx`).
+
+---
+
+## 📡 Backend API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Health check & MySQL / phpMyAdmin status |
+| `GET` | `/api/services` | Get all services (supports `?category=` and `?status=`) |
+| `GET` | `/api/services/:slug` | Get single service details |
+| `POST` | `/api/services` | Create new service (Admin) |
+| `PUT` | `/api/services/:id` | Update service details |
+| `DELETE` | `/api/services/:id` | Delete service |
+| `GET` | `/api/inquiries` | Get client inquiries (supports `?status=`) |
+| `POST` | `/api/inquiries` | Submit new inquiry from website |
+| `PUT` | `/api/inquiries/:id/status` | Update inquiry status & staff notes |
+| `GET` | `/api/stats/overview` | Dashboard metrics for Admin Panel |
