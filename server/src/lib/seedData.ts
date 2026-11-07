@@ -78,3 +78,50 @@ export const initialReviews: ReviewItem[] = [];
 export const initialPillars: SignaturePillarItem[] = [];
 
 
+
+export interface SocialLink {
+  platform: string; // instagram | facebook | youtube | twitter | linkedin | pinterest | whatsapp | website
+  url: string;
+}
+
+export interface SiteSettingsItem {
+  siteName: string;
+  tagline: string;
+  logo: string;
+  favicon: string;
+  metaTitle: string;
+  metaDesc: string;
+  metaKeywords: string;
+  ogImage: string;
+  canonicalUrl: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  address: string;
+  footerAbout: string;
+  footerCopyright: string;
+  socialLinks: SocialLink[];
+  updatedAt?: string;
+}
+
+// Baseline brand settings (editable from Admin → Website settings)
+export const defaultSiteSettings: SiteSettingsItem = {
+  siteName: "Marwar Event",
+  tagline: "Royal Rajasthani Celebrations",
+  logo: "",
+  favicon: "",
+  metaTitle: "Marwar Event — Royal Rajasthani Weddings, Birthdays & Celebrations",
+  metaDesc:
+    "Marwar Event crafts royal Rajasthani celebrations — grand shaadi weddings, sangeet & mehndi nights, birthdays, retirement farewells, corporate galas and anniversaries across Rajasthan.",
+  metaKeywords: "",
+  ogImage: "/assets/hero-palace-D_WyR0gy.jpg",
+  canonicalUrl: "https://marwarevent.com",
+  email: "",
+  phone: "",
+  whatsapp: "",
+  address: "",
+  footerAbout:
+    "Royal Rajasthani event craftsmanship — where every shaadi, birthday and farewell is staged like a maharaja's celebration.",
+  footerCopyright: "",
+  socialLinks: [],
+};

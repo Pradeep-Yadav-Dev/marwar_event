@@ -1,21 +1,56 @@
+"use client";
+
 import Link from "next/link";
+import { BrandMark } from "@/components/Navbar";
+import SocialIcon, { socialLabel } from "@/components/SocialIcon";
+import { useSiteSettings, digitsOnly } from "@/components/SiteSettingsContext";
 
 export default function Footer() {
+  const s = useSiteSettings();
+  const siteName = s?.siteName || "Marwar Event";
+  const year = new Date().getFullYear();
+  const socials = s?.socialLinks || [];
+  const hasContact = !!(s?.email || s?.phone || s?.whatsapp || s?.address);
+
   return (
     <footer className="pattern-jaali bg-maroon-deep py-16 text-cream/75">
       <div className="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 md:grid-cols-3">
         <div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-2xl font-semibold tracking-wide text-gold-light">
-              Marwar
-            </span>
-            <span className="text-[11px] font-medium uppercase tracking-[0.35em] text-cream/80">
-              Event
-            </span>
-          </div>
-          <p className="mt-4 max-w-xs text-sm font-light leading-relaxed">
-            Royal Rajasthani event craftsmanship — where every shaadi, birthday and farewell is staged like a maharaja&apos;s celebration.
-          </p>
+          <BrandMark size="lg" />
+          {s?.footerAbout && (
+            <p className="mt-4 max-w-xs text-sm font-light leading-relaxed">
+              {s.footerAbout}
+            </p>
+          )}
+
+          {socials.length > 0 && (
+            <div
+              style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }}
+            >
+              {socials.map((l, i) => (
+                <a
+                  key={`${l.platform}-${i}`}
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={socialLabel(l.platform)}
+                  title={socialLabel(l.platform)}
+                  className="transition-colors hover:text-gold-light"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 38,
+                    height: 38,
+                    borderRadius: 999,
+                    border: "1px solid rgba(212,165,90,0.35)",
+                  }}
+                >
+                  <SocialIcon platform={l.platform} size={17} />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -23,7 +58,7 @@ export default function Footer() {
           <ul className="mt-4 space-y-2.5 text-sm font-light">
             <li>
               <Link href="/services" className="transition-colors hover:text-gold-light">
-                All Events & Services
+                All Events &amp; Services
               </Link>
             </li>
             <li>
@@ -39,19 +74,44 @@ export default function Footer() {
           </ul>
         </div>
 
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Contact</h3>
-          <ul className="mt-4 space-y-2.5 text-sm font-light">
-            <li>marwarevent.com</li>
-            <li>hello@marwarevent.com</li>
-            <li>+91 98290 00000</li>
-            <li>Jodhpur · Jaipur · Udaipur, Rajasthan</li>
-          </ul>
-        </div>
+        {hasContact && (
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gold">Contact</h3>
+            <ul className="mt-4 space-y-2.5 text-sm font-light">
+              {s?.email && (
+                <li>
+                  <a href={`mailto:${s.email}`} className="transition-colors hover:text-gold-light">
+                    {s.email}
+                  </a>
+                </li>
+              )}
+              {s?.phone && (
+                <li>
+                  <a href={`tel:+${digitsOnly(s.phone)}`} className="transition-colors hover:text-gold-light">
+                    {s.phone}
+                  </a>
+                </li>
+              )}
+              {s?.whatsapp && (
+                <li>
+                  <a
+                    href={`https://wa.me/${digitsOnly(s.whatsapp)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-colors hover:text-gold-light"
+                  >
+                    WhatsApp: {s.whatsapp}
+                  </a>
+                </li>
+              )}
+              {s?.address && <li style={{ whiteSpace: "pre-line" }}>{s.address}</li>}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="mx-auto mt-14 max-w-6xl border-t border-gold/20 px-4 pt-6 text-center text-xs font-light tracking-wide text-cream/60 sm:px-6">
-        © 2026 Marwar Event · marwarevent.com · Crafted with Rajwadi pride
+        {s?.footerCopyright || `© ${year} ${siteName} · All rights reserved`}
       </div>
     </footer>
   );

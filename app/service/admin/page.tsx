@@ -10,7 +10,6 @@ import {
   Star,
   Hexagon,
   Box,
-  Briefcase,
   MapPin,
   Settings,
   LogOut,
@@ -34,6 +33,11 @@ import {
   Image as ImageIcon,
   type LucideProps,
 } from "lucide-react";
+import SettingsPanel from "./SettingsPanel";
+import {
+  notifyAdminUpdate,
+  useSiteSettings,
+} from "@/components/SiteSettingsContext";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -114,7 +118,6 @@ type TabType =
   | "why-marwar"
   | "royal-series"
   | "instagram"
-  | "clients"
   | "venues"
   | "settings";
 
@@ -215,13 +218,6 @@ const NAV: {
     sub: "Social feed integration",
   },
   {
-    id: "clients",
-    label: "Clients & Partners",
-    icon: Briefcase,
-    group: "Website",
-    sub: "Partner institutions and accounts",
-  },
-  {
     id: "venues",
     label: "Venues & Forts",
     icon: MapPin,
@@ -233,7 +229,7 @@ const NAV: {
     label: "Website settings",
     icon: Settings,
     group: "Website",
-    sub: "Contact details and database",
+    sub: "Logo, favicon, SEO, contact, footer & social links",
   },
 ];
 
@@ -310,6 +306,7 @@ const formatDate = (s: string) => {
 /* ------------------------------------------------------------------ */
 
 export default function AdminPanelPage() {
+  const siteSettings = useSiteSettings();
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -363,6 +360,7 @@ export default function AdminPanelPage() {
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
+    notifyAdminUpdate();
     window.setTimeout(() => setToast(null), 2400);
   }, []);
 
@@ -987,18 +985,32 @@ export default function AdminPanelPage() {
       >
         <div className="adm-side-head">
           <div className="adm-brand">
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 32 32"
-              fill="#f2b25c"
-              aria-hidden="true"
-            >
-              <path d="M16 15c-1-5 0-9 4-10 3 3 1 8-2.5 10zM17 16c5-1 9 0 10 4-3 3-8 1-10-2.5zM16 17c1 5 0 9-4 10-3-3-1-8 2.5-10zM15 16c-5 1-9 0-10-4 3-3 8-1 10 2.5z" />
-              <circle cx="16" cy="16" r="2" fill="#0a2b36" />
-            </svg>
+            {siteSettings?.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={siteSettings.logo}
+                alt={siteSettings.siteName || "Logo"}
+                style={{
+                  width: 34,
+                  height: 34,
+                  objectFit: "contain",
+                  borderRadius: 6,
+                }}
+              />
+            ) : (
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 32 32"
+                fill="#f2b25c"
+                aria-hidden="true"
+              >
+                <path d="M16 15c-1-5 0-9 4-10 3 3 1 8-2.5 10zM17 16c5-1 9 0 10 4-3 3-8 1-10-2.5zM16 17c1 5 0 9-4 10-3-3-1-8 2.5-10zM15 16c-5 1-9 0-10-4 3-3 8-1 10 2.5z" />
+                <circle cx="16" cy="16" r="2" fill="#0a2b36" />
+              </svg>
+            )}
             <div>
-              MARWAR
+              {(siteSettings?.siteName || "MARWAR").toUpperCase()}
               <small>ADMIN PANEL</small>
             </div>
           </div>
@@ -2305,23 +2317,6 @@ export default function AdminPanelPage() {
             </section>
           )}
 
-          {/* ================= CLIENTS ================= */}
-          {activeTab === "clients" && (
-            <section className="adm-card adm-fade">
-              <div className="adm-card-head">
-                <div>
-                  <h2 className="adm-card-title">
-                    Corporate clients & royal families
-                  </h2>
-                  <p className="adm-card-sub">
-                    Partner logos shown on the website
-                  </p>
-                </div>
-              </div>
-              <EmptyState text="No partner clients added yet." />
-            </section>
-          )}
-
           {/* ================= VENUES ================= */}
           {activeTab === "venues" && (
             <section className="adm-card adm-fade">
@@ -2339,77 +2334,10 @@ export default function AdminPanelPage() {
 
           {/* ================= SETTINGS ================= */}
           {activeTab === "settings" && (
-            <div className="adm-stack adm-fade" style={{ maxWidth: 900 }}>
-              <section className="adm-card adm-card-pad">
-                <h2 className="adm-card-title" style={{ marginBottom: 14 }}>
-                  General
-                </h2>
-                <div className="adm-form-grid">
-                  <div className="adm-field">
-                    <label htmlFor="s-title">Site title</label>
-                    <input
-                      id="s-title"
-                      type="text"
-                      defaultValue="Marwar Event — Royal Rajasthani Celebrations"
-                    />
-                  </div>
-                  <div className="adm-field">
-                    <label htmlFor="s-phone">Contact phone</label>
-                    <input
-                      id="s-phone"
-                      type="tel"
-                      defaultValue="+91 98290 00000"
-                    />
-                  </div>
-                  <div className="adm-field">
-                    <label htmlFor="s-email">Contact email</label>
-                    <input
-                      id="s-email"
-                      type="email"
-                      defaultValue="hello@marwarevent.com"
-                    />
-                  </div>
-                  <div className="adm-field">
-                    <label htmlFor="s-hq">Headquarters</label>
-                    <input
-                      id="s-hq"
-                      type="text"
-                      defaultValue="Jodhpur · Jaipur · Udaipur, Rajasthan"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              <section className="adm-dark">
-                <div className="adm-dark-head">
-                  <span>
-                    <Database size={16} color="#f2b25c" /> phpMyAdmin / MySQL
-                  </span>
-                  <span className="adm-tag">Prisma</span>
-                </div>
-                <p style={{ fontSize: 13 }}>
-                  Connection string in your project root{" "}
-                  <code style={{ color: "#f2b25c" }}>.env</code>:
-                </p>
-                <pre className="adm-code">
-                  DATABASE_URL=&quot;mysql://root:@localhost:3306/marwar_events&quot;
-                </pre>
-                <p style={{ fontSize: 12, color: "#7fa3ad" }}>
-                  Sync tables to phpMyAdmin:{" "}
-                  <code style={{ color: "#fff" }}>npx prisma db push</code>
-                </p>
-              </section>
-
-              <div className="adm-form-actions">
-                <button
-                  type="button"
-                  className="adm-btn adm-btn-primary"
-                  onClick={() => showToast("Website settings saved")}
-                >
-                  <Save size={15} /> Save settings
-                </button>
-              </div>
-            </div>
+            <SettingsPanel
+              fetchEndpoint={fetchCategoryEndpoint}
+              showToast={showToast}
+            />
           )}
         </main>
       </div>

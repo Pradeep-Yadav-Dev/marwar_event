@@ -7,12 +7,77 @@ import {
   initialCategories,
   initialReviews,
   initialPillars,
+  defaultSiteSettings,
   ServiceItem,
   InquiryItem,
   CategoryItem,
   ReviewItem,
   SignaturePillarItem,
+  SiteSettingsItem,
+  SocialLink,
 } from "./seedData";
+
+export function getSettingsUploadDir(): string {
+  const dir = path.join(getPublicDir(), "uploads", "settings");
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+export function deleteLocalSettingsFile(filePath?: string | null): boolean {
+  if (!filePath || !filePath.startsWith("/uploads/settings/")) return false;
+  try {
+    const fullPath = path.join(getSettingsUploadDir(), path.basename(filePath));
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      return true;
+    }
+  } catch (err) {
+    console.error("Failed to delete local settings file:", err);
+  }
+  return false;
+}
+
+function parseSocialLinks(raw: unknown): SocialLink[] {
+  try {
+    const arr = typeof raw === "string" ? JSON.parse(raw || "[]") : raw;
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter((l) => l && typeof l.url === "string" && l.url.trim())
+      .map((l) => ({
+        platform: String(l.platform || "website").toLowerCase(),
+        url: String(l.url).trim(),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function normalizeSettings(row: any): SiteSettingsItem {
+  const d = defaultSiteSettings;
+  return {
+    siteName: row?.siteName || d.siteName,
+    tagline: row?.tagline ?? d.tagline,
+    logo: row?.logo ?? "",
+    favicon: row?.favicon ?? "",
+    metaTitle: row?.metaTitle || d.metaTitle,
+    metaDesc: row?.metaDesc || d.metaDesc,
+    metaKeywords: row?.metaKeywords ?? "",
+    ogImage: row?.ogImage || d.ogImage,
+    canonicalUrl: row?.canonicalUrl || d.canonicalUrl,
+    email: row?.email ?? "",
+    phone: row?.phone ?? "",
+    whatsapp: row?.whatsapp ?? "",
+    address: row?.address ?? "",
+    footerAbout: row?.footerAbout ?? d.footerAbout,
+    footerCopyright: row?.footerCopyright ?? "",
+    socialLinks: parseSocialLinks(row?.socialLinks),
+    updatedAt: row?.updatedAt
+      ? new Date(row.updatedAt).toISOString()
+      : undefined,
+  };
+}
 
 export function getPublicDir(): string {
   const cwd = process.cwd();
@@ -46,21 +111,37 @@ export function deleteLocalCategoryImage(imagePath?: string | null): boolean {
   return false;
 }
 
-// Global Prisma instance
+// Global Prisma instance (versioned so hot-reload after schema updates creates a fresh client)
+const PRISMA_SCHEMA_VERSION = "v5-settings-pillars-reviews-categories";
 const globalForPrisma = global as unknown as {
   prisma: PrismaClient;
+  prismaSchemaVersion?: string;
   memoryCategories?: CategoryItem[];
   memoryServices?: ServiceItem[];
   memoryInquiries?: InquiryItem[];
   memoryReviews?: ReviewItem[];
   memoryPillars?: SignaturePillarItem[];
+  memorySettings?: SiteSettingsItem;
 };
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
-});
+if (
+  globalForPrisma.prisma &&
+  globalForPrisma.prismaSchemaVersion !== PRISMA_SCHEMA_VERSION
+) {
+  globalForPrisma.prisma.$disconnect().catch(() => {});
+  delete (globalForPrisma as any).prisma;
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+  globalForPrisma.prismaSchemaVersion = PRISMA_SCHEMA_VERSION;
+}
 
 let isDbConnected = false;
 
@@ -80,6 +161,11 @@ globalForPrisma.memoryInquiries = memoryInquiries;
 globalForPrisma.memoryCategories = memoryCategories;
 globalForPrisma.memoryReviews = memoryReviews;
 globalForPrisma.memoryPillars = memoryPillars;
+let memorySettings: SiteSettingsItem = globalForPrisma.memorySettings || {
+  ...defaultSiteSettings,
+  socialLinks: [...defaultSiteSettings.socialLinks],
+};
+globalForPrisma.memorySettings = memorySettings;
 let nextServiceId = 1;
 let nextInquiryId = 1;
 let nextCategoryId = 1;
@@ -100,11 +186,26 @@ export async function checkDbConnection(): Promise<boolean> {
   }
 }
 
+// Lazily verifies the MySQL connection (and retries if MySQL was started after the server booted)
+let dbCheckPromise: Promise<boolean> | null = null;
+let lastFailedCheckAt = 0;
+async function dbReady(): Promise<boolean> {
+  if (isDbConnected) return true;
+  const now = Date.now();
+  if (!dbCheckPromise && now - lastFailedCheckAt > 1500) {
+    dbCheckPromise = checkDbConnection().finally(() => {
+      if (!isDbConnected) lastFailedCheckAt = Date.now();
+      dbCheckPromise = null;
+    });
+  }
+  return dbCheckPromise ? dbCheckPromise : isDbConnected;
+}
+
 // Data access layer that bridges Prisma ORM with in-memory fallback
 export const dbService = {
   // Services
   async getServices(category?: string, status?: string) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         const where: any = {};
         if (category && category !== "All") where.category = category;
@@ -128,7 +229,7 @@ export const dbService = {
   },
 
   async getServiceBySlug(slug: string) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.service.findUnique({ where: { slug } });
       } catch (err) {
@@ -139,7 +240,7 @@ export const dbService = {
   },
 
   async createService(data: Omit<ServiceItem, "id" | "createdAt" | "updatedAt">) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.service.create({
           data: {
@@ -174,7 +275,7 @@ export const dbService = {
   },
 
   async updateService(id: number, data: Partial<ServiceItem>) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.service.update({
           where: { id },
@@ -195,7 +296,7 @@ export const dbService = {
   },
 
   async deleteService(id: number) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.service.delete({ where: { id } });
       } catch (err) {
@@ -210,7 +311,7 @@ export const dbService = {
 
   // Inquiries
   async getInquiries(status?: string) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         const where = status ? { status } : {};
         return await prisma.inquiry.findMany({
@@ -239,7 +340,7 @@ export const dbService = {
     budget?: string;
     message: string;
   }) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.inquiry.create({
           data: {
@@ -279,7 +380,7 @@ export const dbService = {
   },
 
   async updateInquiryStatus(id: number, status: InquiryItem["status"], notes?: string) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.inquiry.update({
           where: { id },
@@ -301,7 +402,7 @@ export const dbService = {
   },
 
   async deleteInquiry(id: number) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.inquiry.delete({ where: { id } });
       } catch (err) {
@@ -316,14 +417,20 @@ export const dbService = {
 
   // Categories
   async getCategories(status?: string) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
-        const where: any = {};
-        if (status) where.status = status;
-        return await prisma.category.findMany({
-          where,
-          orderBy: { id: "asc" },
-        });
+        if ((prisma as any).category?.findMany) {
+          const where: any = {};
+          if (status) where.status = status;
+          return await prisma.category.findMany({
+            where,
+            orderBy: { id: "asc" },
+          });
+        }
+        const rows = status
+          ? await prisma.$queryRaw<CategoryItem[]>`SELECT * FROM Category WHERE status = ${status} ORDER BY id ASC`
+          : await prisma.$queryRaw<CategoryItem[]>`SELECT * FROM Category ORDER BY id ASC`;
+        return rows;
       } catch (err) {
         console.error("Prisma getCategories error, using fallback:", err);
       }
@@ -336,7 +443,7 @@ export const dbService = {
   },
 
   async getCategoryById(id: number) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.category.findUnique({ where: { id } });
       } catch (err) {
@@ -361,7 +468,7 @@ export const dbService = {
         .trim()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.category.create({
           data: {
@@ -408,7 +515,7 @@ export const dbService = {
       deleteLocalCategoryImage(existing.image);
     }
 
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.category.update({
           where: { id },
@@ -447,7 +554,7 @@ export const dbService = {
       deleteLocalCategoryImage(existing.image);
     }
 
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         await prisma.category.delete({ where: { id } });
         return true;
@@ -464,14 +571,20 @@ export const dbService = {
 
   // Reviews
   async getReviews(status?: string) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
-        const where: any = {};
-        if (status) where.status = status;
-        return await prisma.review.findMany({
-          where,
-          orderBy: { id: "desc" },
-        });
+        if ((prisma as any).review?.findMany) {
+          const where: any = {};
+          if (status) where.status = status;
+          return await prisma.review.findMany({
+            where,
+            orderBy: { id: "desc" },
+          });
+        }
+        const rows = status
+          ? await prisma.$queryRaw<ReviewItem[]>`SELECT * FROM Review WHERE status = ${status} ORDER BY id DESC`
+          : await prisma.$queryRaw<ReviewItem[]>`SELECT * FROM Review ORDER BY id DESC`;
+        return rows;
       } catch (err) {
         console.error("Prisma getReviews error, using fallback:", err);
       }
@@ -484,7 +597,7 @@ export const dbService = {
   },
 
   async getReviewById(id: number) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.review.findUnique({ where: { id } });
       } catch (err) {
@@ -513,7 +626,7 @@ export const dbService = {
       "ME";
     const rating = Math.min(5, Math.max(1, Number(data.rating) || 5));
 
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.review.create({
           data: {
@@ -557,7 +670,7 @@ export const dbService = {
         ? Math.min(5, Math.max(1, Number(data.rating) || 5))
         : undefined;
 
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.review.update({
           where: { id },
@@ -587,7 +700,7 @@ export const dbService = {
   },
 
   async deleteReview(id: number) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         await prisma.review.delete({ where: { id } });
         return true;
@@ -603,14 +716,20 @@ export const dbService = {
 
   // Signature Pillars (Why Marwar)
   async getPillars(status?: string) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
-        const where: any = {};
-        if (status) where.status = status;
-        return await prisma.signaturePillar.findMany({
-          where,
-          orderBy: { id: "asc" },
-        });
+        if ((prisma as any).signaturePillar?.findMany) {
+          const where: any = {};
+          if (status) where.status = status;
+          return await prisma.signaturePillar.findMany({
+            where,
+            orderBy: { id: "asc" },
+          });
+        }
+        const rows = status
+          ? await prisma.$queryRaw<SignaturePillarItem[]>`SELECT * FROM SignaturePillar WHERE status = ${status} ORDER BY id ASC`
+          : await prisma.$queryRaw<SignaturePillarItem[]>`SELECT * FROM SignaturePillar ORDER BY id ASC`;
+        return rows;
       } catch (err) {
         console.error("Prisma getPillars error, using fallback:", err);
       }
@@ -623,7 +742,7 @@ export const dbService = {
   },
 
   async getPillarById(id: number) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.signaturePillar.findUnique({ where: { id } });
       } catch (err) {
@@ -645,7 +764,7 @@ export const dbService = {
     const num =
       data.num?.trim() ||
       String(memoryPillars.length + 1).padStart(2, "0");
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.signaturePillar.create({
           data: {
@@ -685,7 +804,7 @@ export const dbService = {
     const existing = await this.getPillarById(id);
     if (!existing) return null;
 
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         return await prisma.signaturePillar.update({
           where: { id },
@@ -715,7 +834,7 @@ export const dbService = {
   },
 
   async deletePillar(id: number) {
-    if (isDbConnected) {
+    if (await dbReady()) {
       try {
         await prisma.signaturePillar.delete({ where: { id } });
         return true;
@@ -727,6 +846,115 @@ export const dbService = {
     if (index === -1) return false;
     memoryPillars.splice(index, 1);
     return true;
+  },
+
+  // Website Settings (single row)
+  async getSettings(): Promise<SiteSettingsItem> {
+    if (await dbReady()) {
+      try {
+        const rows = await prisma.$queryRaw<any[]>`SELECT * FROM SiteSetting ORDER BY id ASC LIMIT 1`;
+        if (rows && rows.length > 0) {
+          return normalizeSettings(rows[0]);
+        }
+        return normalizeSettings(null);
+      } catch (err) {
+        console.error("Prisma getSettings error, using fallback:", err);
+      }
+    }
+    return normalizeSettings(memorySettings);
+  },
+
+  async updateSettings(
+    data: Partial<Omit<SiteSettingsItem, "updatedAt">>
+  ): Promise<SiteSettingsItem> {
+    const existing = await this.getSettings();
+
+    // Remove replaced / cleared local logo & favicon files
+    if (data.logo !== undefined && existing.logo && existing.logo !== data.logo) {
+      deleteLocalSettingsFile(existing.logo);
+    }
+    if (
+      data.favicon !== undefined &&
+      existing.favicon &&
+      existing.favicon !== data.favicon
+    ) {
+      deleteLocalSettingsFile(existing.favicon);
+    }
+
+    const merged: SiteSettingsItem = {
+      ...existing,
+      ...data,
+      socialLinks:
+        data.socialLinks !== undefined
+          ? parseSocialLinks(data.socialLinks)
+          : existing.socialLinks,
+    };
+    const { updatedAt: _u, socialLinks, ...rest } = merged;
+    const socialJson = JSON.stringify(socialLinks);
+    const dbData = { ...rest, socialLinks: socialJson };
+
+    if (await dbReady()) {
+      try {
+        const rows = await prisma.$queryRaw<any[]>`SELECT id FROM SiteSetting ORDER BY id ASC LIMIT 1`;
+        if (rows && rows.length > 0) {
+          const rowId = rows[0].id;
+          await prisma.$executeRaw`
+            UPDATE SiteSetting
+            SET siteName = ${merged.siteName},
+                tagline = ${merged.tagline},
+                logo = ${merged.logo},
+                favicon = ${merged.favicon},
+                metaTitle = ${merged.metaTitle},
+                metaDesc = ${merged.metaDesc},
+                metaKeywords = ${merged.metaKeywords},
+                ogImage = ${merged.ogImage},
+                canonicalUrl = ${merged.canonicalUrl},
+                email = ${merged.email},
+                phone = ${merged.phone},
+                whatsapp = ${merged.whatsapp},
+                address = ${merged.address},
+                footerAbout = ${merged.footerAbout},
+                footerCopyright = ${merged.footerCopyright},
+                socialLinks = ${socialJson},
+                updatedAt = NOW(3)
+            WHERE id = ${rowId}
+          `;
+        } else {
+          await prisma.$executeRaw`
+            INSERT INTO SiteSetting (
+              siteName, tagline, logo, favicon,
+              metaTitle, metaDesc, metaKeywords, ogImage, canonicalUrl,
+              email, phone, whatsapp, address,
+              footerAbout, footerCopyright, socialLinks, updatedAt
+            ) VALUES (
+              ${merged.siteName}, ${merged.tagline}, ${merged.logo}, ${merged.favicon},
+              ${merged.metaTitle}, ${merged.metaDesc}, ${merged.metaKeywords}, ${merged.ogImage}, ${merged.canonicalUrl},
+              ${merged.email}, ${merged.phone}, ${merged.whatsapp}, ${merged.address},
+              ${merged.footerAbout}, ${merged.footerCopyright}, ${socialJson}, NOW(3)
+            )
+          `;
+        }
+        const updatedRows = await prisma.$queryRaw<any[]>`SELECT * FROM SiteSetting ORDER BY id ASC LIMIT 1`;
+        if (updatedRows?.[0]) {
+          memorySettings = normalizeSettings(updatedRows[0]);
+          globalForPrisma.memorySettings = memorySettings;
+          return memorySettings;
+        }
+      } catch (err) {
+        console.error("Prisma updateSettings error, using fallback:", err);
+        try {
+          const row = await prisma.siteSetting.findFirst({ orderBy: { id: "asc" } });
+          const saved = row
+            ? await prisma.siteSetting.update({ where: { id: row.id }, data: dbData })
+            : await prisma.siteSetting.create({ data: dbData });
+          return normalizeSettings(saved);
+        } catch {}
+      }
+    }
+
+    memorySettings = { ...merged, updatedAt: new Date().toISOString() };
+    globalForPrisma.memorySettings = memorySettings;
+    return normalizeSettings(memorySettings);
   },
 
   // Stats

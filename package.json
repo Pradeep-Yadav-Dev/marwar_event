@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
-    "server": "tsx server/src/index.ts",
+    "server": "tsx watch server/src/index.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

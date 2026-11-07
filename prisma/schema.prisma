@@ -94,14 +94,27 @@ model Inquiry {
 }
 
 model SiteSetting {
-  id          Int      @id @default(autoincrement())
-  siteName    String   @default("Marwar Events & Services")
-  tagline     String   @default("Crafting Royal & Timeless Celebrations in Rajasthan")
-  phone       String   @default("+91 98765 43210")
-  email       String   @default("info@marwarevents.com")
-  address     String   @default("Pal Road, Jodhpur, Rajasthan 342008")
-  metaTitle   String   @default("Marwar Events - Royal Destination Weddings & Event Management")
-  metaDesc    String   @default("Premier event planning and wedding management in Marwar, Rajasthan.")
-  updatedAt   DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  // Branding
+  siteName        String   @default("Marwar Event")
+  tagline         String   @default("Royal Rajasthani Celebrations")
+  logo            String   @default("") // /uploads/settings/... (empty = text logo)
+  favicon         String   @default("") // /uploads/settings/... (empty = /favicon.ico)
+  // SEO / Meta
+  metaTitle       String   @default("")
+  metaDesc        String?  @db.Text
+  metaKeywords    String?  @db.Text
+  ogImage         String   @default("")
+  canonicalUrl    String   @default("")
+  // Contact
+  email           String   @default("")
+  phone           String   @default("")
+  whatsapp        String   @default("")
+  address         String?  @db.Text
+  // Footer
+  footerAbout     String?  @db.Text
+  footerCopyright String   @default("")
+  socialLinks     String?  @db.Text // JSON: [{ platform, url }]
+  updatedAt       DateTime @updatedAt
 }
 

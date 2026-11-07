@@ -1,17 +1,49 @@
+"use client";
+
 import Link from "next/link";
 import EnquireLink from "@/components/EnquireLink";
+import { useSiteSettings } from "@/components/SiteSettingsContext";
+
+export function BrandMark({ size = "md" }: { size?: "md" | "lg" }) {
+  const s = useSiteSettings();
+  const name = (s?.siteName || "Marwar Event").trim();
+  const [first, ...rest] = name.split(/\s+/);
+  return (
+    <span className="flex items-center gap-2.5">
+      {s?.logo && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={s.logo}
+          alt={name}
+          style={{
+            height: size === "lg" ? 60 : 46,
+            width: "auto",
+            maxWidth: size === "lg" ? 180 : 140,
+            objectFit: "contain",
+            filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.35))",
+          }}
+        />
+      )}
+      <span className="flex items-baseline gap-2">
+        <span className="font-display text-2xl font-semibold tracking-wide text-gold-light">
+          {first}
+        </span>
+        {rest.length > 0 && (
+          <span className="text-[11px] font-medium uppercase tracking-[0.35em] text-cream/80">
+            {rest.join(" ")}
+          </span>
+        )}
+      </span>
+    </span>
+  );
+}
 
 export default function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-gold/25 bg-maroon-deep/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-baseline gap-2">
-          <span className="font-display text-2xl font-semibold tracking-wide text-gold-light">
-            Marwar
-          </span>
-          <span className="text-[11px] font-medium uppercase tracking-[0.35em] text-cream/80">
-            Event
-          </span>
+        <Link href="/" className="flex items-center" aria-label="Home">
+          <BrandMark />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
