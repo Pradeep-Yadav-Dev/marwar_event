@@ -26,7 +26,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, event, quote, rating, initials, status } = body;
 
-    if (!name || !quote) {
+    const cleanName = typeof name === "string" ? name.trim() : "";
+    const cleanQuote = typeof quote === "string" ? quote.trim() : "";
+
+    if (!cleanName || !cleanQuote) {
       return NextResponse.json(
         {
           success: false,
@@ -37,10 +40,10 @@ export async function POST(req: NextRequest) {
     }
 
     const created = await dbService.createReview({
-      name: String(name).trim(),
+      name: cleanName,
       event: String(event || "").trim(),
-      quote: String(quote).trim(),
-      rating: Number(rating) || 5,
+      quote: cleanQuote,
+      rating: rating !== undefined ? Number(rating) : 5,
       initials: initials ? String(initials).trim() : null,
       status: status === "draft" ? "draft" : "active",
     });

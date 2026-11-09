@@ -21,7 +21,9 @@ router.get("/", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const { name, event, quote, rating, initials, status } = req.body;
-    if (!name || !quote) {
+    const cleanName = typeof name === "string" ? name.trim() : "";
+    const cleanQuote = typeof quote === "string" ? quote.trim() : "";
+    if (!cleanName || !cleanQuote) {
       return res.status(400).json({
         success: false,
         message: "Client name and review quote are required",
@@ -29,10 +31,10 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     const created = await dbService.createReview({
-      name: String(name).trim(),
+      name: cleanName,
       event: String(event || "").trim(),
-      quote: String(quote).trim(),
-      rating: Number(rating) || 5,
+      quote: cleanQuote,
+      rating: rating !== undefined ? Number(rating) : 5,
       initials: initials ? String(initials).trim() : null,
       status: status === "draft" ? "draft" : "active",
     });

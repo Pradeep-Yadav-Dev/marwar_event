@@ -11,7 +11,7 @@ export function BrandMark({ size = "md" }: { size?: "md" | "lg" }) {
   return (
     <span className="flex items-center gap-2.5">
       {s?.logo && (
-        // eslint-disable-next-line @next/next/no-img-element
+         
         <img
           src={s.logo}
           alt={name}
@@ -59,18 +59,24 @@ export default function Navbar() {
           >
             All Events
           </Link>
-          <a
+          <Link
             href="/#why"
             className="text-[13px] font-medium uppercase tracking-[0.18em] text-cream/85 transition-colors hover:text-gold-light"
           >
             Why Marwar
-          </a>
-          <a
+          </Link>
+          <Link
+            href="/#memoirs"
+            className="text-[13px] font-medium uppercase tracking-[0.18em] text-cream/85 transition-colors hover:text-gold-light"
+          >
+            Reviews
+          </Link>
+          <Link
             href="/#contact"
             className="text-[13px] font-medium uppercase tracking-[0.18em] text-cream/85 transition-colors hover:text-gold-light"
           >
             Contact
-          </a>
+          </Link>
         </nav>
 
         <EnquireLink className="rounded-full bg-gradient-royal px-5 py-2 text-[13px] font-semibold uppercase tracking-[0.14em] text-maroon-deep shadow-[0_4px_18px_-4px] shadow-gold/50 transition-transform hover:scale-[1.03]">

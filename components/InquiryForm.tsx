@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useId } from "react";
+import { toast } from "react-toastify";
 import {
   Send,
   CheckCircle2,
@@ -16,11 +17,13 @@ import {
 interface InquiryFormProps {
   defaultService?: string;
   defaultServiceId?: number;
+  onSuccess?: () => void;
 }
 
 export default function InquiryForm({
   defaultService = "General Celebration",
   defaultServiceId,
+  onSuccess,
 }: InquiryFormProps) {
   const uid = useId();
   const [serviceOptions, setServiceOptions] = useState<
@@ -43,13 +46,7 @@ export default function InquiryForm({
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
     const fetchEndpoint = async (subPath: string) => {
-      try {
-        const res = await fetch(`${apiUrl}${subPath}`);
-        if (res.ok) return res.json();
-      } catch {}
       try {
         const res = await fetch(`/api${subPath}`);
         if (res.ok) return res.json();
@@ -111,29 +108,19 @@ export default function InquiryForm({
     setErrorMsg("");
 
     try {
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-      let res: Response | null = null;
-      try {
-        res = await fetch(`${apiUrl}/inquiries`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-      } catch {
-        res = await fetch("/api/inquiries", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        });
-      }
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccessMsg(
+        const msg =
           data.message ||
-            "Thank you! Your royal celebration inquiry has been received.",
-        );
+          "Thank you! Your royal celebration inquiry has been received.";
+        setSuccessMsg(msg);
+        toast.success(msg);
         setFormData({
           name: "",
           email: "",
@@ -145,17 +132,34 @@ export default function InquiryForm({
           budget: "",
           message: "",
         });
+        window.dispatchEvent(new CustomEvent("marwar:close-inquiry-modal"));
+        onSuccess?.();
       } else {
-        setErrorMsg(
-          data.message || "Failed to submit inquiry. Please try again.",
-        );
+        const err =
+          data.message || "Failed to submit inquiry. Please try again.";
+        setErrorMsg(err);
+        toast.error(err);
       }
     } catch {
-      setSuccessMsg(
+      const fallbackMsg =
         "धन्यवाद! Your inquiry has been registered. Our concierge will call you at " +
-          (formData.phone || "your number") +
-          " shortly.",
-      );
+        (formData.phone || "your number") +
+        " shortly.";
+      setSuccessMsg(fallbackMsg);
+      toast.success(fallbackMsg);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        serviceName: defaultService,
+        serviceId: defaultServiceId,
+        eventDate: "",
+        guestCount: "150-400",
+        budget: "",
+        message: "",
+      });
+      window.dispatchEvent(new CustomEvent("marwar:close-inquiry-modal"));
+      onSuccess?.();
     } finally {
       setLoading(false);
     }

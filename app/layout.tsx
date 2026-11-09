@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import FloatingSocialBar from "@/components/FloatingSocialBar";
 import InquiryModal from "@/components/InquiryModal";
+import ToastProvider from "@/components/ToastProvider";
 import { SiteSettingsProvider } from "@/components/SiteSettingsContext";
 import { dbService } from "@/server/src/lib/prisma";
 
@@ -70,17 +71,18 @@ export default async function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400..700;1,400..700&family=Jost:wght@300..600&display=swap"
         />
-        <link rel="preload" as="image" href="/assets/hero-palace-D_WyR0gy.jpg" />
       </head>
       <body className="min-h-full flex flex-col antialiased">
         <SiteSettingsProvider value={settings}>
           {children}
           <FloatingSocialBar />
           <InquiryModal />
+          <ToastProvider />
         </SiteSettingsProvider>
       </body>
     </html>

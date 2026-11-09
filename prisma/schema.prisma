@@ -55,6 +55,17 @@ model SignaturePillar {
   updatedAt DateTime @updatedAt
 }
 
+model InstagramReel {
+  id        Int      @id @default(autoincrement())
+  handle    String   @default("marwarevent")
+  url       String   @db.VarChar(500)
+  caption   String   @db.Text
+  sortOrder Int      @default(0)
+  status    String   @default("active") // "active" | "inactive"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Service {
   id          Int       @id @default(autoincrement())
   title       String

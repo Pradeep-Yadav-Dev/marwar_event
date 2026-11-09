@@ -8,6 +8,12 @@ export async function DELETE(
   try {
     const { id: rawId } = await context.params;
     const id = parseInt(rawId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid inquiry ID" },
+        { status: 400 }
+      );
+    }
     const deleted = await dbService.deleteInquiry(id);
     if (!deleted) {
       return NextResponse.json(

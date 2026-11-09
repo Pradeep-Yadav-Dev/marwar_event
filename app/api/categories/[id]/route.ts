@@ -34,6 +34,12 @@ export async function PUT(
   try {
     const { id: rawId } = await context.params;
     const id = parseInt(rawId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid category ID" },
+        { status: 400 }
+      );
+    }
     const existing = await dbService.getCategoryById(id);
     if (!existing) {
       return NextResponse.json(
@@ -90,6 +96,14 @@ export async function PUT(
       }
     }
 
+    if (name !== undefined && !name) {
+      if (savedFilePath) deleteLocalCategoryImage(savedFilePath);
+      return NextResponse.json(
+        { success: false, message: "Category name cannot be empty" },
+        { status: 400 }
+      );
+    }
+
     const updated = await dbService.updateCategory(id, {
       ...(name !== undefined ? { name } : {}),
       ...(slug !== undefined ? { slug } : {}),
@@ -123,6 +137,12 @@ export async function DELETE(
   try {
     const { id: rawId } = await context.params;
     const id = parseInt(rawId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid category ID" },
+        { status: 400 }
+      );
+    }
     const deleted = await dbService.deleteCategory(id);
     if (!deleted) {
       return NextResponse.json(

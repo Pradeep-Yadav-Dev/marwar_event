@@ -4,6 +4,8 @@ import Footer from "@/components/Footer";
 import MarwarDivider from "@/components/MarwarDivider";
 import InquiryForm from "@/components/InquiryForm";
 import EnquireLink from "@/components/EnquireLink";
+import ReviewsSection, { type ReviewDisplayItem } from "@/components/ReviewsSection";
+import InstagramReelsSlider, { type ReelSlideItem } from "@/components/InstagramReelsSlider";
 import { dbService } from "@/server/src/lib/prisma";
 import {
   Landmark,
@@ -12,31 +14,43 @@ import {
   Camera,
   Music,
   HeartHandshake,
+  Crown,
+  Sparkles,
+  Gem,
+  Flame,
+  Award,
+  Star,
+  Heart,
+  Shield,
+  Hexagon,
   type LucideProps,
 } from "lucide-react";
 
 const PILLAR_ICONS: Record<string, React.ComponentType<LucideProps>> = {
-  Landmark,
-  Flower2,
-  UtensilsCrossed,
-  Camera,
-  Music,
-  HeartHandshake,
+  landmark: Landmark,
+  flower2: Flower2,
+  flower: Flower2,
+  utensilscrossed: UtensilsCrossed,
+  utensils: UtensilsCrossed,
+  camera: Camera,
+  music: Music,
+  hearthandshake: HeartHandshake,
+  crown: Crown,
+  sparkles: Sparkles,
+  gem: Gem,
+  flame: Flame,
+  award: Award,
+  star: Star,
+  heart: Heart,
+  shield: Shield,
+  hexagon: Hexagon,
 };
 
 export const dynamic = "force-dynamic";
 
-interface ReelItem {
-  image: string;
-  title: string;
-  location: string;
-  views: string;
-  likes: string;
-  url: string;
-}
-
 interface PillarItem {
-  icon: React.ComponentType<LucideProps>;
+  icon: React.ComponentType<LucideProps> | null;
+  rawIcon: string;
   num: string;
   hindi: string;
   title: string;
@@ -47,15 +61,6 @@ interface PillarItem {
 interface StatItem {
   value: string;
   label: string;
-}
-
-interface MemoirItem {
-  initials: string;
-  bg: string;
-  text: string;
-  name: string;
-  meta: string;
-  quote: string;
 }
 
 export default async function HomePage() {
@@ -73,7 +78,7 @@ export default async function HomePage() {
     { bg: "#e6dffb", text: "#351b66" },
   ];
   const dbReviews = await dbService.getReviews("active");
-  const memoirs: MemoirItem[] = dbReviews.map((rev, idx) => {
+  const memoirs: ReviewDisplayItem[] = dbReviews.map((rev, idx) => {
     const tone = avatarPalette[idx % avatarPalette.length];
     const derivedInitials =
       rev.initials ||
@@ -85,27 +90,50 @@ export default async function HomePage() {
         .join("") ||
       "ME";
     return {
+      id: rev.id,
       initials: derivedInitials,
       bg: tone.bg,
       text: tone.text,
       name: rev.name,
       meta: rev.event || "Royal Celebration • Rajasthan",
       quote: rev.quote,
+      rating: rev.rating || 5,
     };
   });
 
   const dbPillars = await dbService.getPillars("active");
-  const pillars: PillarItem[] = dbPillars.map((p, idx) => ({
-    icon: PILLAR_ICONS[p.icon] || Landmark,
-    num: p.num || String(idx + 1).padStart(2, "0"),
-    hindi: p.hindi || "शाही परंपरा",
-    title: p.title,
-    tag: p.tag || "Royal Excellence",
-    text: p.text,
-  }));
+  const pillars: PillarItem[] = dbPillars.map((p, idx) => {
+    const rawIcon = (p.icon || "Landmark").trim();
+    const key = rawIcon.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return {
+      icon: PILLAR_ICONS[key] || null,
+      rawIcon,
+      num: p.num || String(idx + 1).padStart(2, "0"),
+      hindi: p.hindi || "शाही परंपरा",
+      title: p.title,
+      tag: p.tag || "Royal Excellence",
+      text: p.text,
+    };
+  });
 
-  // Dummy data removed and saved in /notes.md
-  const reels: ReelItem[] = [];
+  const dbReels = await dbService.getReels("active");
+  const reels: ReelSlideItem[] = dbReels.map((r) => {
+    const cleanUrl = (r.url || "").trim();
+    const isDirectVideo =
+      /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(cleanUrl) ||
+      cleanUrl.startsWith("/uploads/");
+    const shortcodeMatch = cleanUrl.match(
+      /instagram\.com\/(?:[^/]+\/)?(?:reel|reels|p|tv)\/([A-Za-z0-9_-]+)/i
+    );
+    return {
+      id: r.id,
+      shortcode: shortcodeMatch?.[1] || null,
+      videoUrl: isDirectVideo ? cleanUrl : undefined,
+      handle: (r.handle || "marwarevent").replace(/^@+/, ""),
+      caption: r.caption || "",
+      url: cleanUrl,
+    };
+  });
   const stats: StatItem[] = [];
 
   return (
@@ -283,7 +311,23 @@ export default async function HomePage() {
                       <div>
                         <div className="sig-card-top">
                           <div className="sig-icon-medallion">
-                            <Icon className="h-6 w-6" strokeWidth={1.8} />
+                            {Icon ? (
+                              <Icon className="h-6 w-6" strokeWidth={1.8} />
+                            ) : pillar.rawIcon.startsWith("/") ||
+                              pillar.rawIcon.startsWith("http://") ||
+                              pillar.rawIcon.startsWith("https://") ? (
+                              <img
+                                src={pillar.rawIcon}
+                                alt={pillar.title}
+                                className="h-6 w-6 object-contain"
+                              />
+                            ) : pillar.rawIcon.length <= 4 ? (
+                              <span className="text-xl leading-none">
+                                {pillar.rawIcon}
+                              </span>
+                            ) : (
+                              <Landmark className="h-6 w-6" strokeWidth={1.8} />
+                            )}
                           </div>
                           <span className="sig-card-badge">
                             <span className="sig-card-num">{pillar.num}</span>
@@ -309,178 +353,12 @@ export default async function HomePage() {
         )}
 
         {/* MEMOIRS OF ROYAL HOSPITALITY — AUTO RIGHT-TO-LEFT SLIDER */}
-        {memoirs.length > 0 && (
-          <section id="memoirs" className="memoirs-section scroll-mt-20">
-            <div className="memoirs-head-wrap">
-              <div className="memoirs-head">
-                <div>
-                  <p className="memoirs-eyebrow">आशीर्वाद व स्नेह</p>
-                  <h2 className="memoirs-title">Memoirs of Royal Hospitality</h2>
-                </div>
-
-                <div className="memoirs-rating">
-                  <span className="memoirs-stars" aria-label="5 out of 5 stars">
-                    {[0, 1, 2, 3, 4].map((idx) => (
-                      <svg
-                        key={idx}
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                      </svg>
-                    ))}
-                  </span>
-                  <span className="memoirs-standard">5.0 HISTORIC STANDARD</span>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="memoirs-viewport"
-              aria-label="Client testimonials auto-sliding carousel"
-            >
-              <div className="memoirs-track">
-                {[...memoirs, ...memoirs].map((item, idx) => (
-                  <article
-                    key={`${item.initials}-${idx}`}
-                    className="memoirs-card"
-                  >
-                    <p className="memoirs-quote">“{item.quote}”</p>
-
-                    <div className="memoirs-author">
-                      <span
-                        className="memoirs-avatar"
-                        style={{ backgroundColor: item.bg, color: item.text }}
-                      >
-                        {item.initials}
-                      </span>
-                      <div>
-                        <p className="memoirs-name">{item.name}</p>
-                        <p className="memoirs-meta">{item.meta}</p>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
+        <ReviewsSection initialReviews={memoirs} />
 
         {/* FROM INSTAGRAM — REELS SECTION */}
         <section id="instagram" className="ig-section scroll-mt-20">
           <div className="ig-wrap">
-            <div className="text-center">
-              <p className="text-sm font-medium uppercase tracking-[0.35em] text-gold-deep">
-                @marwarevent · शाही झलकियाँ
-              </p>
-              <h2 className="mt-3 font-display text-4xl font-semibold text-foreground sm:text-5xl">
-                From Instagram
-              </h2>
-              <MarwarDivider className="mt-6" />
-              <p className="mx-auto mt-4 max-w-xl text-sm font-light leading-relaxed text-muted-foreground sm:text-base">
-                Real moments from our royal palace weddings, dhol-filled sangeet
-                nights and heritage celebrations across Rajasthan.
-              </p>
-            </div>
-
-            {reels.length > 0 && (
-              <div className="ig-reels-grid">
-                {reels.map((reel) => (
-                  <a
-                    key={reel.title}
-                    href={reel.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ig-reel-card group"
-                  >
-                    <img
-                      src={reel.image}
-                      width={900}
-                      height={1550}
-                      loading="lazy"
-                      alt={reel.title}
-                      className="ig-reel-img"
-                    />
-                    <div className="ig-reel-shade" />
-
-                    <div className="ig-reel-top">
-                      <span className="ig-reel-tag">
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                        </svg>
-                        <span>Reel</span>
-                      </span>
-                      <span className="ig-reel-tag">{reel.location}</span>
-                    </div>
-
-                    <div className="ig-reel-play" aria-hidden="true">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        style={{ marginLeft: 2 }}
-                      >
-                        <polygon points="6 3 20 12 6 21 6 3" />
-                      </svg>
-                    </div>
-
-                    <div className="ig-reel-bottom">
-                      <h3 className="ig-reel-title">{reel.title}</h3>
-                      <div className="ig-reel-meta">
-                        <span>▶ {reel.views}</span>
-                        <span>♥ {reel.likes}</span>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-12 text-center">
-              <a
-                href="https://instagram.com/marwarevent"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2.5 rounded-full bg-gradient-royal px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-maroon-deep shadow-[0_8px_30px_-6px] shadow-gold/60 transition-transform hover:scale-[1.03]"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                </svg>
-                <span>Follow @marwarevent on Instagram</span>
-              </a>
-            </div>
+            <InstagramReelsSlider initialReels={reels} />
           </div>
         </section>
       </main>

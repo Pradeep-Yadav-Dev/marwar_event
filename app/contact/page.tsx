@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import InquiryForm from "@/components/InquiryForm";
-import { MapPin, Phone, Mail, Clock, Crown, ShieldCheck } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Crown } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact Marwar Events Concierge | Event Inquiries Jodhpur",

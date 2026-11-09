@@ -36,7 +36,11 @@ export async function POST(req: NextRequest) {
       message,
     } = body;
 
-    if (!name || !phone || !message) {
+    const cleanName = typeof name === "string" ? name.trim() : "";
+    const cleanPhone = typeof phone === "string" ? phone.trim() : "";
+    const cleanMessage = typeof message === "string" ? message.trim() : "";
+
+    if (!cleanName || !cleanPhone || !cleanMessage) {
       return NextResponse.json(
         {
           success: false,
@@ -47,15 +51,15 @@ export async function POST(req: NextRequest) {
     }
 
     const inquiry = await dbService.createInquiry({
-      name,
-      email: email || "",
-      phone,
+      name: cleanName,
+      email: typeof email === "string" ? email.trim() : "",
+      phone: cleanPhone,
       serviceId: serviceId ? Number(serviceId) : undefined,
-      serviceName,
-      eventDate,
-      guestCount,
-      budget,
-      message,
+      serviceName: typeof serviceName === "string" ? serviceName.trim() : undefined,
+      eventDate: typeof eventDate === "string" ? eventDate.trim() : undefined,
+      guestCount: typeof guestCount === "string" ? guestCount.trim() : undefined,
+      budget: typeof budget === "string" ? budget.trim() : undefined,
+      message: cleanMessage,
     });
 
     return NextResponse.json(

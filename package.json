@@ -11,7 +11,15 @@
     "lint": "eslint",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "test:enquiries": "tsx --test tests/enquiries.test.ts",
+    "test:categories": "tsx --test tests/categories.test.ts",
+    "test:services": "tsx --test tests/services.test.ts",
+    "test:reviews": "tsx --test tests/reviews.test.ts",
+    "test:pillars": "tsx --test tests/pillars.test.ts",
+    "test:reels": "tsx --test tests/reels.test.ts",
+    "test:settings": "tsx --test tests/settings.test.ts",
+    "test": "tsx --test tests/enquiries.test.ts tests/categories.test.ts tests/services.test.ts tests/reviews.test.ts tests/pillars.test.ts tests/reels.test.ts tests/settings.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -24,7 +32,8 @@
     "multer": "^2.5.0",
     "next": "16.4.4",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-toastify": "^11.2.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",

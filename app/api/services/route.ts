@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
       metaDesc,
     } = body;
 
-    if (!title || !description) {
+    const cleanTitle = typeof title === "string" ? title.trim() : "";
+    const cleanDesc =
+      typeof description === "string" ? description.trim() : "";
+
+    if (!cleanTitle || !cleanDesc) {
       return NextResponse.json(
         { success: false, message: "Title and description are required" },
         { status: 400 }
@@ -49,18 +53,12 @@ export async function POST(req: NextRequest) {
     }
 
     const created = await dbService.createService({
-      title,
-      slug:
-        slug ||
-        title
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, ""),
+      title: cleanTitle,
+      slug,
       category: category || "General",
       price: price || "Contact for Quote",
-      shortDesc: shortDesc || title,
-      description,
+      shortDesc: shortDesc || cleanTitle,
+      description: cleanDesc,
       image: image || "",
       icon: icon || "Sparkles",
       features:

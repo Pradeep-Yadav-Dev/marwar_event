@@ -26,7 +26,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { num, hindi, title, tag, text, icon, status } = body;
 
-    if (!title || !text) {
+    const cleanTitle = typeof title === "string" ? title.trim() : "";
+    const cleanText = typeof text === "string" ? text.trim() : "";
+
+    if (!cleanTitle || !cleanText) {
       return NextResponse.json(
         {
           success: false,
@@ -39,9 +42,9 @@ export async function POST(req: NextRequest) {
     const created = await dbService.createPillar({
       num: num ? String(num).trim() : undefined,
       hindi: hindi ? String(hindi).trim() : null,
-      title: String(title).trim(),
+      title: cleanTitle,
       tag: tag ? String(tag).trim() : null,
-      text: String(text).trim(),
+      text: cleanText,
       icon: icon ? String(icon).trim() : "Landmark",
       status: status === "draft" ? "draft" : "active",
     });

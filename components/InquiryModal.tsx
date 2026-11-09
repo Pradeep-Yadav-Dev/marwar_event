@@ -19,9 +19,16 @@ export default function InquiryModal() {
       setOpen(true);
     };
 
+    const onCloseModal = () => {
+      setOpen(false);
+    };
+
     window.addEventListener("marwar:open-inquiry-modal", onOpenModal);
-    return () =>
+    window.addEventListener("marwar:close-inquiry-modal", onCloseModal);
+    return () => {
       window.removeEventListener("marwar:open-inquiry-modal", onOpenModal);
+      window.removeEventListener("marwar:close-inquiry-modal", onCloseModal);
+    };
   }, []);
 
   useEffect(() => {
@@ -73,7 +80,11 @@ export default function InquiryModal() {
           <X className="w-4 h-4" />
         </button>
 
-        <InquiryForm key={selectedService} defaultService={selectedService} />
+        <InquiryForm
+          key={selectedService}
+          defaultService={selectedService}
+          onSuccess={() => setOpen(false)}
+        />
       </div>
     </div>
   );

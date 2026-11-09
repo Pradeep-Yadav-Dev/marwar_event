@@ -379,6 +379,274 @@
 .adm-detail-grid .full { grid-column: 1 / -1; }
 .adm-msg { padding: 12px; border-radius: 9px; background: #f7fafb; border: 1px solid var(--adm-line); font-size: 13px; line-height: 1.6; }
 
+/* ---------------- Instagram Reel Modal & Segmented Control ---------------- */
+.adm-reel-modal {
+  border-radius: 22px 22px 0 0;
+  padding: 22px 22px calc(20px + env(safe-area-inset-bottom));
+  gap: 18px;
+}
+.adm-reel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.adm-reel-head h3 {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--adm-text);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+.adm-reel-head p {
+  font-size: 13.5px;
+  color: var(--adm-muted);
+  margin-top: 5px;
+}
+.adm-reel-close {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--adm-line);
+  background: #fff;
+  color: var(--adm-text);
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.adm-reel-close:hover {
+  background: var(--adm-bg);
+  border-color: #b7ccd3;
+}
+.adm-reel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 2px 2px;
+}
+.adm-reel-body .adm-field label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--adm-text);
+  margin-bottom: 7px;
+}
+.adm-reel-body .adm-field input,
+.adm-reel-body .adm-field textarea {
+  min-height: 46px;
+  padding: 11px 14px;
+  border-radius: 11px;
+  border: 1px solid var(--adm-line);
+  font-size: 14.5px;
+  color: var(--adm-text);
+  background: #fff;
+}
+.adm-reel-body .adm-field input::placeholder,
+.adm-reel-body .adm-field textarea::placeholder {
+  color: #8aa3ac;
+}
+.adm-reel-body .adm-field textarea {
+  min-height: 98px;
+}
+.adm-reel-body .adm-field .hint {
+  font-size: 12.5px;
+  color: var(--adm-muted);
+  margin-top: 6px;
+}
+.adm-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #eaf2f4;
+}
+.adm-seg-btn {
+  min-height: 42px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--adm-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.adm-seg-btn:hover {
+  color: var(--adm-text);
+}
+.adm-seg-btn.is-active {
+  background: #ffffff;
+  color: var(--adm-text);
+  border-color: var(--adm-line);
+  box-shadow: 0 1px 3px rgba(10, 43, 54, 0.06);
+}
+.adm-reel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+.adm-btn-outline {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 11px;
+  border: 1px solid var(--adm-line);
+  background: #ffffff;
+  color: var(--adm-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.adm-btn-outline:hover {
+  background: var(--adm-bg);
+}
+.adm-btn-reel-submit {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 11px;
+  background: var(--adm-accent);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(21, 150, 176, 0.25);
+}
+.adm-btn-reel-submit:hover {
+  background: var(--adm-accent-dark);
+}
+.adm-ig-banner {
+  background: var(--adm-side);
+  color: #fff;
+  border-radius: var(--adm-radius);
+  padding: 20px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.adm-ig-banner-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.adm-ig-banner-sub {
+  font-size: 13px;
+  color: var(--adm-side-text);
+  margin-top: 4px;
+}
+.adm-ig-link {
+  color: #d95b43;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  word-break: break-all;
+}
+.adm-ig-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------------- Why Marwar Pillar Icon Input & Picker ---------------- */
+.adm-icon-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.adm-icon-preview-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #fff5e5 0%, #fde6c4 100%);
+  border: 1px solid #ecc992;
+  color: #8a5612;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.adm-icon-preview-box img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.adm-icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.adm-icon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--adm-line);
+  background: #f7fafb;
+  color: var(--adm-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.adm-icon-chip:hover {
+  border-color: var(--adm-accent);
+  background: #fff;
+}
+.adm-icon-chip.is-selected {
+  border-color: var(--adm-accent);
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent-dark);
+  font-weight: 700;
+}
+.adm-pil-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: #fff5e5;
+  border: 1px solid #f2d9b1;
+  color: #9a6519;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.adm-pil-icon-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 9px;
+  background: #f3f8fa;
+  border: 1px solid var(--adm-line);
+  color: var(--adm-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.adm-pil-icon-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: #fff5e5;
+  color: #9a6519;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
 /* Toast */
 .adm-toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; background: var(--adm-side); color: #fff; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); animation: adm-fade 0.2s ease-out; max-width: calc(100vw - 32px); }
 .adm-toast svg { color: var(--adm-gold); flex-shrink: 0; }
@@ -412,6 +680,7 @@
 
   .adm-modal-wrap { align-items: center; padding: 24px; }
   .adm-modal { max-width: 560px; border-radius: 16px; max-height: 88vh; animation: adm-pop 0.2s ease-out; }
+  .adm-reel-modal { border-radius: 22px; padding: 26px 28px; }
   .adm-modal-grip { display: none; }
   @keyframes adm-pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
 }

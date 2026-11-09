@@ -8,14 +8,33 @@ export async function PUT(
   try {
     const { id: rawId } = await context.params;
     const id = parseInt(rawId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid review ID" },
+        { status: 400 }
+      );
+    }
     const body = await req.json();
     const { name, event, quote, rating, initials, status } = body;
+
+    if (name !== undefined && !String(name).trim()) {
+      return NextResponse.json(
+        { success: false, message: "Client name cannot be empty" },
+        { status: 400 }
+      );
+    }
+    if (quote !== undefined && !String(quote).trim()) {
+      return NextResponse.json(
+        { success: false, message: "Review quote cannot be empty" },
+        { status: 400 }
+      );
+    }
 
     const updated = await dbService.updateReview(id, {
       ...(name !== undefined ? { name: String(name).trim() } : {}),
       ...(event !== undefined ? { event: String(event).trim() } : {}),
       ...(quote !== undefined ? { quote: String(quote).trim() } : {}),
-      ...(rating !== undefined ? { rating: Number(rating) || 5 } : {}),
+      ...(rating !== undefined ? { rating: Number(rating) } : {}),
       ...(initials !== undefined
         ? { initials: String(initials).trim() || null }
         : {}),
@@ -54,6 +73,12 @@ export async function DELETE(
   try {
     const { id: rawId } = await context.params;
     const id = parseInt(rawId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid review ID" },
+        { status: 400 }
+      );
+    }
     const deleted = await dbService.deleteReview(id);
     if (!deleted) {
       return NextResponse.json(

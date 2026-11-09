@@ -96,7 +96,7 @@ function ImagePicker({
               minHeight: 90,
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img
               src={preview}
               alt={`${label} preview`}
@@ -208,7 +208,10 @@ export default function SettingsPanel({
   };
 
   useEffect(() => {
-    load();
+    const id = window.requestAnimationFrame(() => {
+      void load();
+    });
+    return () => window.cancelAnimationFrame(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

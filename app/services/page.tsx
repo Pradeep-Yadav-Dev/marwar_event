@@ -36,14 +36,7 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
     const fetchEndpoint = async (subPath: string) => {
-      try {
-        const res = await fetch(`${apiUrl}${subPath}`);
-        if (res.ok) return res.json();
-      } catch {}
       try {
         const res = await fetch(`/api${subPath}`);
         if (res.ok) return res.json();
@@ -59,7 +52,7 @@ export default function ServicesPage() {
         if (catData?.success && Array.isArray(catData.data)) {
           const tabs: CategoryTab[] = [
             { id: "all", label: "All Events", name: "all" },
-            ...catData.data.map((c: any) => ({
+            ...catData.data.map((c: { slug?: string; name: string }) => ({
               id: c.slug || c.name.toLowerCase(),
               label: c.name,
               name: c.name,

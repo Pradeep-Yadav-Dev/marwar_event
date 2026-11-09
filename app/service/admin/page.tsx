@@ -9,8 +9,6 @@ import {
   Package,
   Star,
   Hexagon,
-  Box,
-  MapPin,
   Settings,
   LogOut,
   Menu,
@@ -24,13 +22,25 @@ import {
   CheckCircle2,
   Clock,
   RefreshCw,
-  Database,
   ArrowUpRight,
   Save,
   MessageCircle,
   Eye,
   Upload,
   Image as ImageIcon,
+  Landmark,
+  Flower2,
+  UtensilsCrossed,
+  Camera,
+  Music,
+  HeartHandshake,
+  Crown,
+  Sparkles,
+  Gem,
+  Flame,
+  Award,
+  Heart,
+  Shield,
   type LucideProps,
 } from "lucide-react";
 import SettingsPanel from "./SettingsPanel";
@@ -72,6 +82,15 @@ interface PillarItem {
   text: string;
   icon: string;
   status: "active" | "draft";
+}
+
+interface InstagramReelItem {
+  id: number;
+  handle: string;
+  url: string;
+  caption: string;
+  sortOrder: number;
+  status: "active" | "inactive";
 }
 
 interface ServiceItem {
@@ -116,9 +135,7 @@ type TabType =
   | "products"
   | "reviews"
   | "why-marwar"
-  | "royal-series"
   | "instagram"
-  | "venues"
   | "settings";
 
 type IconType = React.ComponentType<LucideProps>;
@@ -204,25 +221,11 @@ const NAV: {
     sub: "Signature pillars on the homepage",
   },
   {
-    id: "royal-series",
-    label: "Royal Series",
-    icon: Box,
-    group: "Website",
-    sub: "Flagship heritage destination series",
-  },
-  {
     id: "instagram",
     label: "Instagram",
     icon: InstagramIcon,
     group: "Website",
     sub: "Social feed integration",
-  },
-  {
-    id: "venues",
-    label: "Venues & Forts",
-    icon: MapPin,
-    group: "Website",
-    sub: "Partner palaces across Rajasthan",
   },
   {
     id: "settings",
@@ -273,6 +276,82 @@ const EMPTY_PILLAR = {
   status: "active" as "active" | "draft",
 };
 
+const PILLAR_ICON_MAP: Record<string, IconType> = {
+  landmark: Landmark,
+  flower2: Flower2,
+  flower: Flower2,
+  utensilscrossed: UtensilsCrossed,
+  utensils: UtensilsCrossed,
+  camera: Camera,
+  music: Music,
+  hearthandshake: HeartHandshake,
+  crown: Crown,
+  sparkles: Sparkles,
+  gem: Gem,
+  flame: Flame,
+  award: Award,
+  star: Star,
+  heart: Heart,
+  shield: Shield,
+  hexagon: Hexagon,
+};
+
+const PILLAR_ICON_PRESETS: { value: string; label: string; icon: IconType }[] =
+  [
+    { value: "Landmark", label: "Palace / Fort", icon: Landmark },
+    { value: "Flower2", label: "Royal Decor", icon: Flower2 },
+    { value: "UtensilsCrossed", label: "Marwari Rasoi", icon: UtensilsCrossed },
+    { value: "Camera", label: "Cinema & Stills", icon: Camera },
+    { value: "Music", label: "Folk & Sangeet", icon: Music },
+    { value: "HeartHandshake", label: "Hospitality", icon: HeartHandshake },
+    { value: "Crown", label: "Royal Crown", icon: Crown },
+    { value: "Sparkles", label: "Celebration", icon: Sparkles },
+    { value: "Gem", label: "Jewelled Luxury", icon: Gem },
+    { value: "Flame", label: "Vedic Rituals", icon: Flame },
+    { value: "Award", label: "Excellence", icon: Award },
+    { value: "Star", label: "Signature Star", icon: Star },
+  ];
+
+function PillarIconPreview({
+  icon,
+  size = 18,
+}: {
+  icon?: string | null;
+  size?: number;
+}) {
+  const raw = (icon || "Landmark").trim();
+  const key = raw.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const MatchedIcon = PILLAR_ICON_MAP[key];
+  if (MatchedIcon) {
+    return <MatchedIcon size={size} strokeWidth={1.8} />;
+  }
+  if (
+    raw.startsWith("/") ||
+    raw.startsWith("http://") ||
+    raw.startsWith("https://")
+  ) {
+    return (
+      <img
+        src={raw}
+        alt="Icon"
+        style={{ width: size, height: size, objectFit: "contain" }}
+      />
+    );
+  }
+  if (raw.length <= 4) {
+    return <span style={{ fontSize: size * 0.95, lineHeight: 1 }}>{raw}</span>;
+  }
+  return <Landmark size={size} strokeWidth={1.8} />;
+}
+
+const EMPTY_REEL = {
+  handle: "marwarevent",
+  url: "",
+  caption: "",
+  sortOrder: 0,
+  status: "active" as "active" | "inactive",
+};
+
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
@@ -301,6 +380,11 @@ const formatDate = (s: string) => {
   });
 };
 
+const ADMIN_TAB_STORAGE_KEY = "marwar_admin_active_tab";
+
+const isValidTab = (val: string | null | undefined): val is TabType =>
+  Boolean(val && NAV.some((n) => n.id === val));
+
 /* ------------------------------------------------------------------ */
 /* Page                                                                */
 /* ------------------------------------------------------------------ */
@@ -318,6 +402,7 @@ export default function AdminPanelPage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [pillars, setPillars] = useState<PillarItem[]>([]);
+  const [reels, setReels] = useState<InstagramReelItem[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | InquiryStatus>(
@@ -349,12 +434,16 @@ export default function AdminPanelPage() {
   const [pillarForm, setPillarForm] = useState(EMPTY_PILLAR);
   const [savingPillar, setSavingPillar] = useState<boolean>(false);
 
+  const [showReelModal, setShowReelModal] = useState(false);
+  const [editingReelId, setEditingReelId] = useState<number | null>(null);
+  const [reelForm, setReelForm] = useState(EMPTY_REEL);
+  const [savingReel, setSavingReel] = useState<boolean>(false);
+
   const [selectedInquiry, setSelectedInquiry] = useState<InquiryItem | null>(
     null,
   );
   const [inquiryNotes, setInquiryNotes] = useState("");
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
   const currentNav = NAV.find((n) => n.id === activeTab) || NAV[0];
   const pendingCount = inquiries.filter((i) => i.status === "PENDING").length;
 
@@ -364,16 +453,12 @@ export default function AdminPanelPage() {
     window.setTimeout(() => setToast(null), 2400);
   }, []);
 
-  /* Helper that calls Express /api/* first, falling back to Next.js /api/* */
+  /* Helper that calls same-origin Next.js /api/* routes */
   const fetchCategoryEndpoint = useCallback(
     async (subPath: string, init?: RequestInit) => {
-      try {
-        const res = await fetch(`${apiUrl}${subPath}`, init);
-        if (res.ok) return res;
-      } catch {}
       return fetch(`/api${subPath}`, init);
     },
-    [apiUrl],
+    [],
   );
 
   /* ---------------- Data ---------------- */
@@ -381,48 +466,64 @@ export default function AdminPanelPage() {
     setLoading(true);
     let online = false;
     try {
-      const servRes = await fetchCategoryEndpoint("/services").catch(() => null);
-      if (servRes && servRes.ok) {
-        const d = await servRes.json();
-        if (d.success && Array.isArray(d.data)) {
+      const [servRes, catRes, revRes, pilRes, reelRes, inqRes] =
+        await Promise.allSettled([
+          fetch("/api/services"),
+          fetch("/api/categories"),
+          fetch("/api/reviews"),
+          fetch("/api/pillars"),
+          fetch("/api/reels"),
+          fetch("/api/inquiries"),
+        ]);
+
+      if (servRes.status === "fulfilled" && servRes.value.ok) {
+        const d = await servRes.value.json();
+        if (d?.success && Array.isArray(d.data)) {
           setServices(d.data);
           online = true;
         }
       }
 
-      const catRes = await fetchCategoryEndpoint("/categories").catch(
-        () => null,
-      );
-      if (catRes && catRes.ok) {
-        const d = await catRes.json();
-        if (d.success && Array.isArray(d.data)) {
+      if (catRes.status === "fulfilled" && catRes.value.ok) {
+        const d = await catRes.value.json();
+        if (d?.success && Array.isArray(d.data)) {
           setCategories(d.data);
           online = true;
         }
       }
 
-      const revRes = await fetchCategoryEndpoint("/reviews").catch(() => null);
-      if (revRes && revRes.ok) {
-        const d = await revRes.json();
-        if (d.success && Array.isArray(d.data)) {
+      if (revRes.status === "fulfilled" && revRes.value.ok) {
+        const d = await revRes.value.json();
+        if (d?.success && Array.isArray(d.data)) {
           setReviews(d.data);
           online = true;
         }
       }
 
-      const pilRes = await fetchCategoryEndpoint("/pillars").catch(() => null);
-      if (pilRes && pilRes.ok) {
-        const d = await pilRes.json();
-        if (d.success && Array.isArray(d.data)) {
+      if (pilRes.status === "fulfilled" && pilRes.value.ok) {
+        const d = await pilRes.value.json();
+        if (d?.success && Array.isArray(d.data)) {
           setPillars(d.data);
           online = true;
         }
       }
 
-      const inqRes = await fetchCategoryEndpoint("/inquiries").catch(() => null);
-      if (inqRes && inqRes.ok) {
-        const d = await inqRes.json();
-        if (d.success && Array.isArray(d.data)) {
+      if (reelRes.status === "fulfilled" && reelRes.value.ok) {
+        const d = await reelRes.value.json();
+        if (d?.success && Array.isArray(d.data)) {
+          setReels(
+            [...d.data].sort(
+              (a: InstagramReelItem, b: InstagramReelItem) =>
+                a.sortOrder - b.sortOrder || b.id - a.id
+            )
+          );
+          online = true;
+        }
+      }
+
+      if (inqRes.status === "fulfilled" && inqRes.value.ok) {
+        const d = await inqRes.value.json();
+        if (d?.success && Array.isArray(d.data)) {
           setInquiries(d.data);
           online = true;
         }
@@ -431,10 +532,13 @@ export default function AdminPanelPage() {
       setApiOnline(online);
       setLoading(false);
     }
-  }, [fetchCategoryEndpoint]);
+  }, []);
 
   useEffect(() => {
-    loadData();
+    const id = window.requestAnimationFrame(() => {
+      void loadData();
+    });
+    return () => window.cancelAnimationFrame(id);
   }, [loadData]);
 
   /* Lock body scroll when drawer / modal open; close with Escape */
@@ -444,6 +548,7 @@ export default function AdminPanelPage() {
     showCategoryModal ||
     showReviewModal ||
     showPillarModal ||
+    showReelModal ||
     !!selectedInquiry;
   useEffect(() => {
     document.body.style.overflow = overlayOpen ? "hidden" : "";
@@ -460,15 +565,60 @@ export default function AdminPanelPage() {
       setShowCategoryModal(false);
       setShowReviewModal(false);
       setShowPillarModal(false);
+      setShowReelModal(false);
       setSelectedInquiry(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /* Restore active tab from URL (?tab=...) or localStorage on refresh */
+  useEffect(() => {
+    const rafId = window.requestAnimationFrame(() => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlTab =
+          params.get("tab") || window.location.hash.replace(/^#/, "");
+        const savedTab = window.localStorage.getItem(ADMIN_TAB_STORAGE_KEY);
+        const resolved: TabType = isValidTab(urlTab)
+          ? urlTab
+          : isValidTab(savedTab)
+            ? savedTab
+            : "dashboard";
+        setActiveTab(resolved);
+        window.localStorage.setItem(ADMIN_TAB_STORAGE_KEY, resolved);
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", resolved);
+        window.history.replaceState(null, "", url.toString());
+      } catch {}
+    });
+
+    const onPopState = () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlTab = params.get("tab");
+        if (isValidTab(urlTab)) {
+          setActiveTab(urlTab);
+          window.localStorage.setItem(ADMIN_TAB_STORAGE_KEY, urlTab);
+        }
+      } catch {}
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
   const goTo = (tab: TabType) => {
     setActiveTab(tab);
     setSidebarOpen(false);
+    try {
+      window.localStorage.setItem(ADMIN_TAB_STORAGE_KEY, tab);
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.pushState(null, "", url.toString());
+    } catch {}
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -510,6 +660,9 @@ export default function AdminPanelPage() {
       prev.map((inq) =>
         inq.id === id ? { ...inq, notes: inquiryNotes } : inq,
       ),
+    );
+    setSelectedInquiry((prev) =>
+      prev && prev.id === id ? { ...prev, notes: inquiryNotes } : prev,
     );
     showToast("Notes saved");
   };
@@ -893,8 +1046,7 @@ export default function AdminPanelPage() {
     try {
       const payload = {
         num:
-          pillarForm.num.trim() ||
-          String(pillars.length + 1).padStart(2, "0"),
+          pillarForm.num.trim() || String(pillars.length + 1).padStart(2, "0"),
         hindi: pillarForm.hindi.trim() || null,
         title: pillarForm.title.trim(),
         tag: pillarForm.tag.trim() || null,
@@ -953,6 +1105,100 @@ export default function AdminPanelPage() {
     showToast("Signature pillar deleted");
   };
 
+  /* ---------------- Instagram Reels CRUD ---------------- */
+  const openNewReel = () => {
+    setEditingReelId(null);
+    setReelForm({
+      ...EMPTY_REEL,
+      sortOrder: 0,
+    });
+    setShowReelModal(true);
+  };
+
+  const openEditReel = (reel: InstagramReelItem) => {
+    setEditingReelId(reel.id);
+    setReelForm({
+      handle: (reel.handle || "marwarevent").replace(/^@+/, ""),
+      url: reel.url || "",
+      caption: reel.caption || "",
+      sortOrder: Number.isFinite(Number(reel.sortOrder))
+        ? Number(reel.sortOrder)
+        : 0,
+      status: reel.status === "inactive" ? "inactive" : "active",
+    });
+    setShowReelModal(true);
+  };
+
+  const handleSaveReel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reelForm.url.trim()) return;
+    setSavingReel(true);
+
+    try {
+      const payload = {
+        handle: reelForm.handle.trim().replace(/^@+/, "") || "marwarevent",
+        url: reelForm.url.trim(),
+        caption: reelForm.caption.trim(),
+        sortOrder: Number.isFinite(Number(reelForm.sortOrder))
+          ? Number(reelForm.sortOrder)
+          : 0,
+        status: reelForm.status,
+      };
+
+      const sortReels = (list: InstagramReelItem[]) =>
+        [...list].sort((a, b) => a.sortOrder - b.sortOrder || b.id - a.id);
+
+      if (editingReelId) {
+        const res = await fetchCategoryEndpoint(`/reels/${editingReelId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const d = await res.json();
+        if (d.success && d.data) {
+          setReels((prev) =>
+            sortReels(prev.map((r) => (r.id === editingReelId ? d.data : r))),
+          );
+          showToast("Reel updated");
+        } else {
+          throw new Error();
+        }
+      } else {
+        const res = await fetchCategoryEndpoint("/reels", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const d = await res.json();
+        if (d.success && d.data) {
+          setReels((prev) => sortReels([...prev, d.data]));
+          showToast("Reel added");
+        } else {
+          throw new Error();
+        }
+      }
+
+      setShowReelModal(false);
+      setEditingReelId(null);
+    } catch {
+      showToast("Failed to save reel");
+    } finally {
+      setSavingReel(false);
+    }
+  };
+
+  const handleDeleteReel = async (reel: InstagramReelItem) => {
+    if (!confirm(`Delete Instagram reel "${reel.caption || reel.url}"?`))
+      return;
+    try {
+      await fetchCategoryEndpoint(`/reels/${reel.id}`, {
+        method: "DELETE",
+      });
+    } catch {}
+    setReels((prev) => prev.filter((r) => r.id !== reel.id));
+    showToast("Reel deleted");
+  };
+
   /* ---------------- Derived ---------------- */
   const filteredInquiries = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -986,7 +1232,7 @@ export default function AdminPanelPage() {
         <div className="adm-side-head">
           <div className="adm-brand">
             {siteSettings?.logo ? (
-              // eslint-disable-next-line @next/next/no-img-element
+               
               <img
                 src={siteSettings.logo}
                 alt={siteSettings.siteName || "Logo"}
@@ -1170,6 +1416,15 @@ export default function AdminPanelPage() {
                 <Plus size={16} /> Add Pillar
               </button>
             )}
+            {activeTab === "instagram" && (
+              <button
+                type="button"
+                className="adm-btn adm-btn-primary"
+                onClick={openNewReel}
+              >
+                <Plus size={16} /> Add reel
+              </button>
+            )}
             {activeTab === "dashboard" && (
               <button
                 type="button"
@@ -1215,114 +1470,53 @@ export default function AdminPanelPage() {
                 />
               </div>
 
-              <div className="adm-grid-2">
-                <section className="adm-card">
-                  <div className="adm-card-head">
-                    <div>
-                      <h2 className="adm-card-title">Recent Enquiries</h2>
-                      <p className="adm-card-sub">
-                        Latest leads from the contact form
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="adm-link-btn"
-                      onClick={() => goTo("enquiries")}
-                    >
-                      View all ({inquiries.length})
-                    </button>
+              <section className="adm-card">
+                <div className="adm-card-head">
+                  <div>
+                    <h2 className="adm-card-title">Recent Enquiries</h2>
+                    <p className="adm-card-sub">
+                      Latest leads from the contact form
+                    </p>
                   </div>
-                  {inquiries.length === 0 ? (
-                    <EmptyState text="No enquiries yet." />
-                  ) : (
-                    <ul className="adm-list">
-                      {inquiries.slice(0, 5).map((inq) => (
-                        <li key={inq.id} className="adm-list-row">
-                          <span className="adm-initial">
-                            {inq.name.charAt(0)}
-                          </span>
-                          <div className="adm-list-main">
-                            <p className="adm-list-name">{inq.name}</p>
-                            <p className="adm-list-meta">
-                              {inq.serviceName} · {timeAgo(inq.createdAt)}
-                            </p>
-                          </div>
-                          <span className={`adm-badge st-${inq.status}`}>
-                            {inq.status}
-                          </span>
-                          <button
-                            type="button"
-                            className="adm-btn adm-btn-icon"
-                            aria-label="View details"
-                            onClick={() => openInquiry(inq)}
-                          >
-                            <Eye size={17} />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-
-                <div className="adm-stack">
-                  <section className="adm-dark">
-                    <div className="adm-dark-head">
-                      <span>
-                        <Database size={16} color="#f2b25c" /> Database &
-                        Backend
-                      </span>
-                      <span className="adm-tag">:5001</span>
-                    </div>
-                    <div className="adm-kv">
-                      <span>ORM</span>
-                      <b>Prisma Client v6</b>
-                    </div>
-                    <div className="adm-kv">
-                      <span>Database</span>
-                      <b>MySQL (phpMyAdmin)</b>
-                    </div>
-                    <div className="adm-kv">
-                      <span>DB name</span>
-                      <b className="gold">marwar_events</b>
-                    </div>
-                    <div className="adm-kv">
-                      <span>API status</span>
-                      <b>{apiOnline ? "Connected" : "Offline (demo)"}</b>
-                    </div>
-                    <button
-                      type="button"
-                      className="adm-btn adm-btn-primary adm-btn-block"
-                      onClick={() => goTo("settings")}
-                    >
-                      Database settings
-                    </button>
-                  </section>
-
-                  <section className="adm-card">
-                    <div className="adm-card-head">
-                      <h2 className="adm-card-title">Quick actions</h2>
-                    </div>
-                    <div className="adm-quick">
-                      <button type="button" onClick={openNewService}>
-                        <Plus size={18} />
-                        New package
-                      </button>
-                      <button type="button" onClick={() => goTo("enquiries")}>
-                        <Inbox size={18} />
-                        Enquiries
-                      </button>
-                      <button type="button" onClick={() => goTo("reviews")}>
-                        <Star size={18} />
-                        Reviews
-                      </button>
-                      <button type="button" onClick={() => goTo("settings")}>
-                        <Settings size={18} />
-                        Settings
-                      </button>
-                    </div>
-                  </section>
+                  <button
+                    type="button"
+                    className="adm-link-btn"
+                    onClick={() => goTo("enquiries")}
+                  >
+                    View all ({inquiries.length})
+                  </button>
                 </div>
-              </div>
+                {inquiries.length === 0 ? (
+                  <EmptyState text="No enquiries yet." />
+                ) : (
+                  <ul className="adm-list">
+                    {inquiries.slice(0, 5).map((inq) => (
+                      <li key={inq.id} className="adm-list-row">
+                        <span className="adm-initial">
+                          {inq.name.charAt(0)}
+                        </span>
+                        <div className="adm-list-main">
+                          <p className="adm-list-name">{inq.name}</p>
+                          <p className="adm-list-meta">
+                            {inq.serviceName} · {timeAgo(inq.createdAt)}
+                          </p>
+                        </div>
+                        <span className={`adm-badge st-${inq.status}`}>
+                          {inq.status}
+                        </span>
+                        <button
+                          type="button"
+                          className="adm-btn adm-btn-icon"
+                          aria-label="View details"
+                          onClick={() => openInquiry(inq)}
+                        >
+                          <Eye size={17} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             </div>
           )}
 
@@ -1539,7 +1733,7 @@ export default function AdminPanelPage() {
                   {services.map((s) => (
                     <article key={s.id} className="adm-card adm-svc">
                       <div className="adm-svc-img">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        { }
                         <img src={s.image} alt={s.title} loading="lazy" />
                         <span className="adm-svc-tag">{s.category}</span>
                         <span
@@ -1646,7 +1840,7 @@ export default function AdminPanelPage() {
                                 <td>
                                   <div className="adm-cat-thumb">
                                     {cat.image ? (
-                                      /* eslint-disable-next-line @next/next/no-img-element */
+                                       
                                       <img
                                         src={cat.image}
                                         alt={cat.name}
@@ -1753,7 +1947,7 @@ export default function AdminPanelPage() {
                             <div className="adm-enq-top">
                               <div className="adm-cat-thumb">
                                 {cat.image ? (
-                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                   
                                   <img
                                     src={cat.image}
                                     alt={cat.name}
@@ -1838,17 +2032,10 @@ export default function AdminPanelPage() {
                       Client Reviews ({reviews.length})
                     </h2>
                     <p className="adm-card-sub">
-                      Manage testimonials displayed in the &ldquo;Memoirs of Royal
-                      Hospitality&rdquo; slider on the homepage
+                      Manage testimonials displayed in the &ldquo;Memoirs of
+                      Royal Hospitality&rdquo; slider on the homepage
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="adm-btn adm-btn-sm adm-btn-primary"
-                    onClick={openNewReview}
-                  >
-                    <Plus size={15} /> Add Review
-                  </button>
                 </div>
 
                 {reviews.length === 0 ? (
@@ -2036,36 +2223,31 @@ export default function AdminPanelPage() {
           {/* ================= WHY MARWAR ================= */}
           {activeTab === "why-marwar" && (
             <div className="adm-stack adm-fade">
-              <section className="adm-card">
+              {/* Top Dark Banner */}
+
+              <section className="adm-card" style={{ overflow: "hidden" }}>
                 <div className="adm-card-head">
                   <div>
                     <h2 className="adm-card-title">
-                      The Marwar Signature Pillars ({pillars.length})
+                      Signature Pillars List ({pillars.length})
                     </h2>
                     <p className="adm-card-sub">
-                      Manage the signature standards displayed in &ldquo;The
-                      Marwar Signature&rdquo; section on the homepage.
+                      Click Edit on any pillar to update its medallion icon,
+                      title, Hindi badge, or description.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="adm-btn adm-btn-sm adm-btn-primary"
-                    onClick={openNewPillar}
-                  >
-                    <Plus size={14} /> New Pillar
-                  </button>
                 </div>
 
                 {pillars.length === 0 ? (
                   <EmptyState
-                    text="No signature pillars configured yet."
+                    text="No signature pillars configured yet. Click 'Add Pillar' to create your first pillar."
                     action={
                       <button
                         type="button"
                         className="adm-btn adm-btn-primary"
                         onClick={openNewPillar}
                       >
-                        <Plus size={16} /> Add First Pillar
+                        <Plus size={16} /> Add Pillar
                       </button>
                     }
                   />
@@ -2076,78 +2258,68 @@ export default function AdminPanelPage() {
                       <table className="adm-table">
                         <thead>
                           <tr>
-                            <th style={{ width: 72 }}>No.</th>
+                            <th style={{ width: 68 }}>No.</th>
+                            <th>Icon</th>
                             <th>Pillar Title &amp; Hindi Badge</th>
                             <th>Description</th>
                             <th>Highlight Tag</th>
-                            <th>Icon</th>
                             <th>Status</th>
-                            <th className="right">Actions</th>
+                            <th className="adm-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {pillars.map((pil) => (
                             <tr key={pil.id}>
                               <td>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: 34,
-                                    height: 34,
-                                    borderRadius: 10,
-                                    background: "#fff5e5",
-                                    color: "#9a6519",
-                                    fontWeight: 700,
-                                    fontSize: 13,
-                                  }}
-                                >
+                                <span className="adm-pil-num">
                                   {pil.num || "01"}
                                 </span>
                               </td>
                               <td>
-                                <p className="adm-cell-main">{pil.title}</p>
+                                <span className="adm-pil-icon-cell">
+                                  <span className="adm-pil-icon-badge">
+                                    <PillarIconPreview
+                                      icon={pil.icon}
+                                      size={15}
+                                    />
+                                  </span>
+                                  <span>{pil.icon || "Landmark"}</span>
+                                </span>
+                              </td>
+                              <td>
+                                <p className="strong">{pil.title}</p>
                                 {pil.hindi && (
                                   <p
-                                    className="adm-cell-sub"
-                                    style={{ color: "#b57c2c", fontWeight: 600 }}
+                                    className="sub"
+                                    style={{
+                                      color: "#9a6519",
+                                      fontWeight: 600,
+                                      marginTop: 2,
+                                    }}
                                   >
                                     {pil.hindi}
                                   </p>
                                 )}
                               </td>
-                              <td style={{ maxWidth: 360 }}>
+                              <td style={{ maxWidth: 340 }}>
                                 <p
-                                  className="adm-cell-sub"
+                                  className="sub"
                                   style={{
                                     display: "-webkit-box",
                                     WebkitLineClamp: 2,
                                     WebkitBoxOrient: "vertical",
                                     overflow: "hidden",
                                     lineHeight: 1.5,
+                                    color: "var(--adm-text)",
                                   }}
                                 >
                                   {pil.text}
                                 </p>
                               </td>
                               <td>
-                                <span className="adm-cat-pill">
+                                <span className="adm-badge st-CONTACTED">
                                   {pil.tag || "Royal Excellence"}
                                 </span>
-                              </td>
-                              <td>
-                                <code
-                                  style={{
-                                    fontSize: 12,
-                                    padding: "2px 8px",
-                                    borderRadius: 6,
-                                    background: "#f1f6f8",
-                                    color: "#0e3b49",
-                                  }}
-                                >
-                                  {pil.icon || "Landmark"}
-                                </code>
                               </td>
                               <td>
                                 <span
@@ -2160,25 +2332,27 @@ export default function AdminPanelPage() {
                                   {pil.status === "active" ? "ACTIVE" : "DRAFT"}
                                 </span>
                               </td>
-                              <td className="right">
-                                <div className="adm-row-actions">
-                                  <button
-                                    type="button"
-                                    className="adm-btn adm-btn-sm adm-btn-soft"
-                                    onClick={() => openEditPillar(pil)}
-                                  >
-                                    <Edit size={14} /> Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="adm-btn adm-btn-icon adm-btn-danger-soft"
-                                    title="Delete pillar"
-                                    aria-label="Delete pillar"
-                                    onClick={() => handleDeletePillar(pil)}
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                </div>
+                              <td
+                                className="adm-right"
+                                style={{ whiteSpace: "nowrap" }}
+                              >
+                                <button
+                                  type="button"
+                                  className="adm-btn adm-btn-sm adm-btn-soft"
+                                  onClick={() => openEditPillar(pil)}
+                                  style={{ marginRight: 6 }}
+                                >
+                                  <Edit size={14} /> Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  className="adm-btn adm-btn-icon danger"
+                                  title="Delete pillar"
+                                  aria-label="Delete pillar"
+                                  onClick={() => handleDeletePillar(pil)}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -2187,32 +2361,21 @@ export default function AdminPanelPage() {
                     </div>
 
                     {/* Mobile Cards */}
-                    <div className="adm-enq-cards">
+                    <div className="adm-cards">
                       {pillars.map((pil) => (
-                        <article key={pil.id} className="adm-enq-card">
-                          <div className="adm-enq-card-top">
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: 36,
-                                height: 36,
-                                borderRadius: 10,
-                                background: "#fff5e5",
-                                color: "#9a6519",
-                                fontWeight: 700,
-                                fontSize: 13,
-                                flexShrink: 0,
-                              }}
-                            >
-                              {pil.num || "01"}
+                        <article key={pil.id} className="adm-enq">
+                          <div className="adm-enq-top">
+                            <span className="adm-pil-num">
+                              <PillarIconPreview icon={pil.icon} size={16} />
                             </span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p className="adm-cell-main">{pil.title}</p>
-                              <p className="adm-cell-sub">
+                            <div className="adm-list-main">
+                              <p className="adm-list-name">
+                                {pil.num || "01"} · {pil.title}
+                              </p>
+                              <p className="adm-list-meta">
                                 {pil.hindi ? `${pil.hindi} · ` : ""}
-                                {pil.tag || "Royal Excellence"}
+                                {pil.tag || "Royal Excellence"} · Icon:{" "}
+                                {pil.icon || "Landmark"}
                               </p>
                             </div>
                             <span
@@ -2225,7 +2388,12 @@ export default function AdminPanelPage() {
                               {pil.status === "active" ? "ACTIVE" : "DRAFT"}
                             </span>
                           </div>
-                          <p className="adm-enq-msg">{pil.text}</p>
+                          <p
+                            className="adm-enq-msg"
+                            style={{ color: "var(--adm-text)" }}
+                          >
+                            {pil.text}
+                          </p>
                           <div
                             style={{
                               display: "flex",
@@ -2258,78 +2426,233 @@ export default function AdminPanelPage() {
             </div>
           )}
 
-          {/* ================= ROYAL SERIES ================= */}
-          {activeTab === "royal-series" && (
-            <section className="adm-card adm-fade">
-              <div className="adm-card-head">
-                <div>
-                  <h2 className="adm-card-title">
-                    Royal Palace & Dunes Series
-                  </h2>
-                  <p className="adm-card-sub">Flagship heritage experiences</p>
-                </div>
-              </div>
-              <EmptyState text="No Royal Series items added yet." />
-            </section>
-          )}
-
           {/* ================= INSTAGRAM ================= */}
           {activeTab === "instagram" && (
-            <section className="adm-card adm-card-pad adm-fade">
-              <div className="adm-form">
-                <div className="adm-field">
-                  <label htmlFor="ig-handle">Instagram handle</label>
-                  <input
-                    id="ig-handle"
-                    type="text"
-                    defaultValue="@marwarevent"
-                  />
-                </div>
-                <div className="adm-field">
-                  <label htmlFor="ig-url">Profile URL</label>
-                  <input
-                    id="ig-url"
-                    type="url"
-                    defaultValue="https://instagram.com/marwarevent"
-                  />
-                  <p className="hint">
-                    Used by the floating Instagram button on the website.
-                  </p>
-                </div>
-                <div className="adm-form-actions">
-                  <a
-                    href="https://instagram.com/marwarevent"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="adm-btn adm-btn-soft"
-                  >
-                    Open profile <ArrowUpRight size={14} />
-                  </a>
-                  <button
-                    type="button"
-                    className="adm-btn adm-btn-primary"
-                    onClick={() => showToast("Instagram settings saved")}
-                  >
-                    <Save size={15} /> Save
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
+            <div className="adm-stack adm-fade">
+              {/* Top Dark Banner */}
 
-          {/* ================= VENUES ================= */}
-          {activeTab === "venues" && (
-            <section className="adm-card adm-fade">
-              <div className="adm-card-head">
-                <div>
-                  <h2 className="adm-card-title">Venues & partner forts</h2>
-                  <p className="adm-card-sub">
-                    Palace partnerships across Rajasthan
-                  </p>
+              {/* Reels Table / Cards List */}
+              <section className="adm-card" style={{ overflow: "hidden" }}>
+                <div className="adm-card-head">
+                  <div>
+                    <h2 className="adm-card-title">
+                      Reels List ({reels.length})
+                    </h2>
+                    <p className="adm-card-sub">
+                      Lower sort order numbers appear first on the website.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <EmptyState text="No partner venues added yet." />
-            </section>
+
+                {reels.length === 0 ? (
+                  <EmptyState
+                    text="No Instagram reels added yet. Click 'Add reel' to add your first reel."
+                    action={
+                      <button
+                        type="button"
+                        className="adm-btn adm-btn-primary"
+                        onClick={openNewReel}
+                      >
+                        <Plus size={16} /> Add reel
+                      </button>
+                    }
+                  />
+                ) : (
+                  <>
+                    {/* Desktop Table List */}
+                    <div className="adm-table-wrap">
+                      <table className="adm-table">
+                        <thead>
+                          <tr>
+                            <th>Handle</th>
+                            <th>Caption</th>
+                            <th>Instagram URL</th>
+                            <th>Sort order</th>
+                            <th>Status</th>
+                            <th className="adm-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reels.map((reel) => {
+                            const cleanHandle = (
+                              reel.handle || "marwarevent"
+                            ).replace(/^@+/, "");
+                            return (
+                              <tr key={reel.id}>
+                                <td>
+                                  <p className="strong">@{cleanHandle}</p>
+                                </td>
+                                <td>
+                                  <p
+                                    className="sub"
+                                    style={{
+                                      maxWidth: 300,
+                                      color: reel.caption
+                                        ? "var(--adm-text)"
+                                        : "var(--adm-muted)",
+                                    }}
+                                  >
+                                    {reel.caption || "—"}
+                                  </p>
+                                </td>
+                                <td>
+                                  <a
+                                    href={reel.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="adm-ig-link"
+                                    title={reel.url}
+                                  >
+                                    <span
+                                      className="clip"
+                                      style={{ maxWidth: 280 }}
+                                    >
+                                      {reel.url}
+                                    </span>
+                                    <ArrowUpRight size={13} />
+                                  </a>
+                                </td>
+                                <td>
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      minWidth: 30,
+                                      height: 26,
+                                      padding: "0 8px",
+                                      borderRadius: 7,
+                                      background: "#f1f6f8",
+                                      color: "#12303a",
+                                      fontWeight: 700,
+                                      fontSize: 12.5,
+                                    }}
+                                  >
+                                    {reel.sortOrder ?? 0}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span
+                                    className={`adm-badge ${
+                                      reel.status === "active"
+                                        ? "st-CONFIRMED"
+                                        : "st-COMPLETED"
+                                    }`}
+                                  >
+                                    {reel.status === "active"
+                                      ? "ACTIVE"
+                                      : "INACTIVE"}
+                                  </span>
+                                </td>
+                                <td
+                                  className="adm-right"
+                                  style={{ whiteSpace: "nowrap" }}
+                                >
+                                  <button
+                                    type="button"
+                                    className="adm-btn adm-btn-sm adm-btn-soft"
+                                    onClick={() => openEditReel(reel)}
+                                    style={{ marginRight: 6 }}
+                                  >
+                                    <Edit size={14} /> Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="adm-btn adm-btn-icon danger"
+                                    onClick={() => handleDeleteReel(reel)}
+                                    aria-label="Delete reel"
+                                    title="Delete reel"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Cards List */}
+                    <div className="adm-cards">
+                      {reels.map((reel) => {
+                        const cleanHandle = (
+                          reel.handle || "marwarevent"
+                        ).replace(/^@+/, "");
+                        return (
+                          <article key={reel.id} className="adm-enq">
+                            <div className="adm-enq-top">
+                              <span className="adm-initial">
+                                <InstagramIcon size={17} />
+                              </span>
+                              <div className="adm-list-main">
+                                <p className="adm-list-name">@{cleanHandle}</p>
+                                <p className="adm-list-meta">
+                                  Sort order: {reel.sortOrder ?? 0}
+                                </p>
+                              </div>
+                              <span
+                                className={`adm-badge ${
+                                  reel.status === "active"
+                                    ? "st-CONFIRMED"
+                                    : "st-COMPLETED"
+                                }`}
+                              >
+                                {reel.status === "active"
+                                  ? "ACTIVE"
+                                  : "INACTIVE"}
+                              </span>
+                            </div>
+
+                            {reel.caption && (
+                              <p
+                                className="adm-enq-msg"
+                                style={{ color: "var(--adm-text)" }}
+                              >
+                                {reel.caption}
+                              </p>
+                            )}
+
+                            <a
+                              href={reel.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="adm-ig-link"
+                            >
+                              {reel.url} <ArrowUpRight size={13} />
+                            </a>
+
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 6,
+                              }}
+                            >
+                              <button
+                                type="button"
+                                className="adm-btn adm-btn-sm adm-btn-primary"
+                                onClick={() => openEditReel(reel)}
+                              >
+                                <Edit size={14} /> Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="adm-btn adm-btn-sm adm-btn-danger-soft"
+                                onClick={() => handleDeleteReel(reel)}
+                                style={{ marginLeft: "auto" }}
+                              >
+                                <Trash2 size={14} /> Delete
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </section>
+            </div>
           )}
 
           {/* ================= SETTINGS ================= */}
@@ -2769,7 +3092,7 @@ export default function AdminPanelPage() {
                 <div className="adm-upload-zone">
                   {categoryImagePreview ? (
                     <div className="adm-upload-preview">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      { }
                       <img src={categoryImagePreview} alt="Category preview" />
                     </div>
                   ) : (
@@ -2908,7 +3231,9 @@ export default function AdminPanelPage() {
                   />
                 </div>
                 <div className="adm-field">
-                  <label htmlFor="rev-initials">Avatar Initials (2 chars)</label>
+                  <label htmlFor="rev-initials">
+                    Avatar Initials (2 chars)
+                  </label>
                   <input
                     id="rev-initials"
                     type="text"
@@ -3024,7 +3349,7 @@ export default function AdminPanelPage() {
           onClick={() => setShowPillarModal(false)}
         >
           <form
-            className="adm-modal"
+            className="adm-modal adm-reel-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="pil-modal-title"
@@ -3032,15 +3357,21 @@ export default function AdminPanelPage() {
             onSubmit={handleSavePillar}
           >
             <div className="adm-modal-grip" />
-            <div className="adm-modal-head">
-              <h3 id="pil-modal-title">
-                {editingPillarId
-                  ? "Edit Signature Pillar"
-                  : "Add Signature Pillar"}
-              </h3>
+            <div className="adm-reel-head">
+              <div>
+                <h3 id="pil-modal-title">
+                  {editingPillarId
+                    ? "Edit signature pillar"
+                    : "Add signature pillar"}
+                </h3>
+                <p>
+                  Configure a royal standard for &ldquo;The Marwar
+                  Signature&rdquo; section on the homepage.
+                </p>
+              </div>
               <button
                 type="button"
-                className="adm-btn adm-btn-icon"
+                className="adm-reel-close"
                 aria-label="Close"
                 onClick={() => setShowPillarModal(false)}
               >
@@ -3048,7 +3379,7 @@ export default function AdminPanelPage() {
               </button>
             </div>
 
-            <div className="adm-modal-body">
+            <div className="adm-reel-body">
               <div className="adm-form-grid">
                 <div className="adm-field">
                   <label htmlFor="pil-title">Pillar Title *</label>
@@ -3056,7 +3387,7 @@ export default function AdminPanelPage() {
                     id="pil-title"
                     type="text"
                     required
-                    placeholder="e.g. Authentic Heritage Venues"
+                    placeholder="e.g. Royal Venues"
                     value={pillarForm.title}
                     onChange={(e) =>
                       setPillarForm({ ...pillarForm, title: e.target.value })
@@ -3090,6 +3421,7 @@ export default function AdminPanelPage() {
                       setPillarForm({ ...pillarForm, num: e.target.value })
                     }
                   />
+                  <p className="hint">Shown as 01, 02, etc. on the card.</p>
                 </div>
                 <div className="adm-field">
                   <label htmlFor="pil-tag">Highlight Footer Tag</label>
@@ -3102,46 +3434,64 @@ export default function AdminPanelPage() {
                       setPillarForm({ ...pillarForm, tag: e.target.value })
                     }
                   />
+                  <p className="hint">Bottom highlight label on the card.</p>
                 </div>
               </div>
 
-              <div className="adm-form-grid">
-                <div className="adm-field">
-                  <label htmlFor="pil-icon">Medallion Icon</label>
-                  <select
+              {/* Medallion Icon Input + Quick Preset Picker */}
+              <div className="adm-field">
+                <label htmlFor="pil-icon">Medallion Icon</label>
+                <div className="adm-icon-input-row">
+                  <div
+                    className="adm-icon-preview-box"
+                    title={`Preview: ${pillarForm.icon || "Landmark"}`}
+                  >
+                    <PillarIconPreview icon={pillarForm.icon} size={22} />
+                  </div>
+                  <input
                     id="pil-icon"
+                    type="text"
+                    placeholder="Type icon name (e.g. Landmark, Crown), emoji (👑) or image URL…"
                     value={pillarForm.icon}
                     onChange={(e) =>
                       setPillarForm({ ...pillarForm, icon: e.target.value })
                     }
-                  >
-                    <option value="Landmark">Landmark (Palace / Fort)</option>
-                    <option value="Flower2">Flower2 (Royal Decor)</option>
-                    <option value="UtensilsCrossed">
-                      UtensilsCrossed (Marwari Cuisine)
-                    </option>
-                    <option value="Camera">Camera (Cinema &amp; Stills)</option>
-                    <option value="Music">Music (Folk &amp; Langa)</option>
-                    <option value="HeartHandshake">
-                      HeartHandshake (Padharo Hospitality)
-                    </option>
-                  </select>
+                  />
                 </div>
-                <div className="adm-field">
-                  <label htmlFor="pil-status">Visibility</label>
-                  <select
-                    id="pil-status"
-                    value={pillarForm.status}
-                    onChange={(e) =>
-                      setPillarForm({
-                        ...pillarForm,
-                        status: e.target.value as "active" | "draft",
-                      })
-                    }
-                  >
-                    <option value="active">Active (Shown on Website)</option>
-                    <option value="draft">Draft (Hidden)</option>
-                  </select>
+                <p className="hint">
+                  Type any icon name, emoji, or image URL above, or click a
+                  preset icon below:
+                </p>
+                <div className="adm-icon-picker-grid">
+                  {PILLAR_ICON_PRESETS.map((preset) => {
+                    const PresetIcon = preset.icon;
+                    const isSelected =
+                      pillarForm.icon.trim().toLowerCase() ===
+                      preset.value.toLowerCase();
+                    return (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        className={`adm-icon-chip ${
+                          isSelected ? "is-selected" : ""
+                        }`}
+                        onClick={() =>
+                          setPillarForm({ ...pillarForm, icon: preset.value })
+                        }
+                      >
+                        <PresetIcon size={15} strokeWidth={1.8} />
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {preset.value}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -3150,7 +3500,7 @@ export default function AdminPanelPage() {
                 <textarea
                   id="pil-text"
                   required
-                  rows={4}
+                  rows={3}
                   placeholder="Describe this royal standard of Marwar excellence…"
                   value={pillarForm.text}
                   onChange={(e) =>
@@ -3158,27 +3508,197 @@ export default function AdminPanelPage() {
                   }
                 />
               </div>
+
+              <div
+                className="adm-seg"
+                role="group"
+                aria-label="Pillar visibility status"
+              >
+                <button
+                  type="button"
+                  className={`adm-seg-btn ${
+                    pillarForm.status === "active" ? "is-active" : ""
+                  }`}
+                  onClick={() =>
+                    setPillarForm({ ...pillarForm, status: "active" })
+                  }
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  className={`adm-seg-btn ${
+                    pillarForm.status === "draft" ? "is-active" : ""
+                  }`}
+                  onClick={() =>
+                    setPillarForm({ ...pillarForm, status: "draft" })
+                  }
+                >
+                  Draft (Inactive)
+                </button>
+              </div>
             </div>
 
-            <div className="adm-modal-foot">
+            <div className="adm-reel-foot">
               <button
                 type="button"
-                className="adm-btn adm-btn-soft"
+                className="adm-btn adm-btn-outline"
                 onClick={() => setShowPillarModal(false)}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="adm-btn adm-btn-primary"
+                className="adm-btn adm-btn-reel-submit"
                 disabled={savingPillar}
               >
-                <Save size={15} />{" "}
                 {savingPillar
                   ? "Saving…"
                   : editingPillarId
-                    ? "Update Pillar"
-                    : "Save Pillar"}
+                    ? "Save pillar"
+                    : "Add pillar"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ================= ADD / EDIT INSTAGRAM REEL MODAL ================= */}
+      {showReelModal && (
+        <div className="adm-modal-wrap" onClick={() => setShowReelModal(false)}>
+          <form
+            className="adm-modal adm-reel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reel-modal-title"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleSaveReel}
+          >
+            <div className="adm-modal-grip" />
+            <div className="adm-reel-head">
+              <div>
+                <h3 id="reel-modal-title">
+                  {editingReelId ? "Edit reel" : "Add reel"}
+                </h3>
+                <p>Paste an Instagram reel URL. It appears after Reviews.</p>
+              </div>
+              <button
+                type="button"
+                className="adm-reel-close"
+                aria-label="Close"
+                onClick={() => setShowReelModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="adm-reel-body">
+              <div className="adm-field">
+                <label htmlFor="reel-handle">Handle</label>
+                <input
+                  id="reel-handle"
+                  type="text"
+                  placeholder="marwarevent"
+                  value={reelForm.handle}
+                  onChange={(e) =>
+                    setReelForm({ ...reelForm, handle: e.target.value })
+                  }
+                />
+                <p className="hint">Shown as @handle on the reel card.</p>
+              </div>
+
+              <div className="adm-field">
+                <label htmlFor="reel-url">Instagram URL</label>
+                <input
+                  id="reel-url"
+                  type="url"
+                  required
+                  placeholder="https://www.instagram.com/reel/..."
+                  value={reelForm.url}
+                  onChange={(e) =>
+                    setReelForm({ ...reelForm, url: e.target.value })
+                  }
+                />
+                <p className="hint">
+                  Use a reel or post link from instagram.com.
+                </p>
+              </div>
+
+              <div className="adm-field">
+                <label htmlFor="reel-caption">Caption</label>
+                <textarea
+                  id="reel-caption"
+                  rows={3}
+                  placeholder="Short line shown on the reel card."
+                  value={reelForm.caption}
+                  onChange={(e) =>
+                    setReelForm({ ...reelForm, caption: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="adm-field">
+                <label htmlFor="reel-sort">Sort order</label>
+                <input
+                  id="reel-sort"
+                  type="number"
+                  value={reelForm.sortOrder}
+                  onChange={(e) =>
+                    setReelForm({
+                      ...reelForm,
+                      sortOrder: Number(e.target.value) || 0,
+                    })
+                  }
+                />
+                <p className="hint">Lower numbers appear first.</p>
+              </div>
+
+              <div
+                className="adm-seg"
+                role="group"
+                aria-label="Reel visibility status"
+              >
+                <button
+                  type="button"
+                  className={`adm-seg-btn ${
+                    reelForm.status === "active" ? "is-active" : ""
+                  }`}
+                  onClick={() => setReelForm({ ...reelForm, status: "active" })}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  className={`adm-seg-btn ${
+                    reelForm.status === "inactive" ? "is-active" : ""
+                  }`}
+                  onClick={() =>
+                    setReelForm({ ...reelForm, status: "inactive" })
+                  }
+                >
+                  Inactive
+                </button>
+              </div>
+            </div>
+
+            <div className="adm-reel-foot">
+              <button
+                type="button"
+                className="adm-btn adm-btn-outline"
+                onClick={() => setShowReelModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="adm-btn adm-btn-reel-submit"
+                disabled={savingReel}
+              >
+                {savingReel
+                  ? "Saving…"
+                  : editingReelId
+                    ? "Save reel"
+                    : "Add reel"}
               </button>
             </div>
           </form>

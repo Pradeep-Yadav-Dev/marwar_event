@@ -58,7 +58,11 @@ export async function PUT(req: NextRequest) {
       };
     } else {
       const body = await req.json();
-      get = (k) => (body[k] !== undefined ? String(body[k]) : undefined);
+      get = (k) => {
+        const val = body[k];
+        if (val === undefined || val === null) return undefined;
+        return typeof val === "object" ? JSON.stringify(val) : String(val);
+      };
     }
 
     const update = buildSettingsUpdate({

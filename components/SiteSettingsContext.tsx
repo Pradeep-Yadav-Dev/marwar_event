@@ -59,22 +59,11 @@ export function SiteSettingsProvider({
 
   // Sync when server-rendered prop changes
   useEffect(() => {
-    setSettings(value);
+    const id = window.requestAnimationFrame(() => setSettings(value));
+    return () => window.cancelAnimationFrame(id);
   }, [value]);
 
   const fetchLatestSettings = useCallback(async () => {
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-    try {
-      const res = await fetch(`${apiUrl}/settings`, { cache: "no-store" });
-      if (res.ok) {
-        const d = await res.json();
-        if (d.success && d.data) {
-          setSettings(d.data);
-          return;
-        }
-      }
-    } catch {}
     try {
       const res = await fetch("/api/settings", { cache: "no-store" });
       if (res.ok) {
@@ -88,11 +77,13 @@ export function SiteSettingsProvider({
 
   // Fetch latest settings on mount and listen for live Admin updates
   useEffect(() => {
-    fetchLatestSettings();
+    const initId = window.requestAnimationFrame(() => {
+      void fetchLatestSettings();
+    });
 
     const handleSync = (incoming?: PublicSiteSettings) => {
       if (incoming) setSettings(incoming);
-      else fetchLatestSettings();
+      else void fetchLatestSettings();
       if (!isAdmin) {
         router.refresh();
       }
@@ -125,6 +116,7 @@ export function SiteSettingsProvider({
     }
 
     return () => {
+      window.cancelAnimationFrame(initId);
       window.removeEventListener(CHANNEL_NAME, onCustomEvent);
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", onFocus);

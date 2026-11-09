@@ -8,8 +8,27 @@ export async function PUT(
   try {
     const { id: rawId } = await context.params;
     const id = parseInt(rawId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid signature pillar ID" },
+        { status: 400 }
+      );
+    }
     const body = await req.json();
     const { num, hindi, title, tag, text, icon, status } = body;
+
+    if (title !== undefined && !String(title).trim()) {
+      return NextResponse.json(
+        { success: false, message: "Pillar title cannot be empty" },
+        { status: 400 }
+      );
+    }
+    if (text !== undefined && !String(text).trim()) {
+      return NextResponse.json(
+        { success: false, message: "Pillar description text cannot be empty" },
+        { status: 400 }
+      );
+    }
 
     const updated = await dbService.updatePillar(id, {
       ...(num !== undefined ? { num: String(num).trim() } : {}),
@@ -55,6 +74,12 @@ export async function DELETE(
   try {
     const { id: rawId } = await context.params;
     const id = parseInt(rawId, 10);
+    if (!Number.isFinite(id) || id <= 0) {
+      return NextResponse.json(
+        { success: false, message: "Invalid signature pillar ID" },
+        { status: 400 }
+      );
+    }
     const deleted = await dbService.deletePillar(id);
     if (!deleted) {
       return NextResponse.json(

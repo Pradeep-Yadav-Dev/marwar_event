@@ -62,14 +62,19 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <a href="/#why" className="transition-colors hover:text-gold-light">
+              <Link href="/#why" className="transition-colors hover:text-gold-light">
                 The Marwar Signature
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/#contact" className="transition-colors hover:text-gold-light">
+              <Link href="/#memoirs" className="transition-colors hover:text-gold-light">
+                Client Reviews
+              </Link>
+            </li>
+            <li>
+              <Link href="/#contact" className="transition-colors hover:text-gold-light">
                 Plan Your Event
-              </a>
+              </Link>
             </li>
           </ul>
         </div>

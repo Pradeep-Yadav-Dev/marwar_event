@@ -593,7 +593,7 @@ export const initialInquiries = [
 
 ---
 
-## 9. Admin Panel — Reviews, Royal Series, Clients & Venues (`app/service/admin/page.tsx`)
+## 9. Admin Panel — Reviews (`app/service/admin/page.tsx`)
 
 ```ts
 export const adminSampleReviews = [
@@ -609,32 +609,6 @@ export const adminSampleReviews = [
     rating: 5,
     text: "Flawless staging, crisp sound reinforcement, and pristine Rajasthani hospitality. Our international delegates were completely mesmerized.",
   },
-];
-
-export const adminRoyalSeries = [
-  {
-    eyebrow: "Heritage Forts",
-    title: "Mehrangarh & Umaid Bhawan Lawn Galas",
-    desc: "High rampart fireworks, royal elephant entries and vintage car caravans.",
-  },
-  {
-    eyebrow: "Desert Luxury",
-    title: "Osian & Sam Luxury Swiss Dunes",
-    desc: "Private candlelit sand dunes, bonfire Kalbelia acts and royal barbecue feasts.",
-  },
-];
-
-export const adminPartnerClients = [
-  "Taj Hotels & Palaces",
-  "ITC Rajputana",
-  "TechCorp India",
-  "Heritage Hospitality Group",
-];
-
-export const adminPartnerVenues = [
-  { city: "Jodhpur", venues: "Mehrangarh Fort, Umaid Bhawan, Pal Haveli" },
-  { city: "Udaipur", venues: "Lake Pichola Island Palaces, Jagmandir" },
-  { city: "Jaisalmer & Osian", venues: "Sam Sand Dunes, Osian Heritage Camp" },
 ];
 ```
 

@@ -58,7 +58,11 @@ const handleSaveSettings = async (req: Request, res: Response) => {
   try {
     const body = req.body || {};
     const update = buildSettingsUpdate({
-      get: (k) => (body[k] !== undefined ? String(body[k]) : undefined),
+      get: (k) => {
+        const val = body[k];
+        if (val === undefined || val === null) return undefined;
+        return typeof val === "object" ? JSON.stringify(val) : String(val);
+      },
       uploadedLogo: logoPath,
       uploadedFavicon: faviconPath,
     });

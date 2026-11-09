@@ -71,11 +71,23 @@ export interface SignaturePillarItem {
   updatedAt: string;
 }
 
+export interface InstagramReelItem {
+  id: number;
+  handle: string;
+  url: string;
+  caption: string;
+  sortOrder: number;
+  status: "active" | "inactive";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const initialCategories: CategoryItem[] = [];
 export const initialServices: ServiceItem[] = [];
 export const initialInquiries: InquiryItem[] = [];
 export const initialReviews: ReviewItem[] = [];
 export const initialPillars: SignaturePillarItem[] = [];
+export const initialReels: InstagramReelItem[] = [];
 
 
 
